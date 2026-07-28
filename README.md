@@ -90,7 +90,7 @@ confirmed the hard way. That's exactly why the lookup lives in
 `[age]` has already been loaded from the config `init` finished generating.
 
 Cloning is anonymous (read-only), so pushing changes afterward still needs
-real auth. `run_once_after_15-switch-remote-to-ssh.sh.tmpl` switches the
+real auth. `.chezmoiscripts/run_once_after_15-switch-remote-to-ssh.sh.tmpl` switches the
 source repo's remote to SSH automatically once our own SSH key has been
 decrypted onto disk. If you'd rather have push access from the very first
 clone instead of waiting for that, pre-place your SSH key and use `--ssh`:
@@ -173,7 +173,8 @@ you find more readable.
 ### Packages
 
 `brew bundle install` adds; `brew bundle cleanup --force` removes anything not
-declared in the Brewfile. Both run from `run_onchange_after_20-brew-bundle.sh`,
+declared in the Brewfile. Both run from
+`.chezmoiscripts/run_onchange_after_20-brew-bundle.sh.tmpl`,
 which re-fires whenever `packages.yaml` changes. So deleting a line from
 `packages.yaml` uninstalls it fleet-wide on the next `chezmoi update`.
 
