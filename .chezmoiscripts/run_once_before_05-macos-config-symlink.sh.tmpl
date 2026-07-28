@@ -1,59 +1,65 @@
 {{ if eq .chezmoi.os "darwin" -}}
 #!/bin/bash
-# Makes ~/.config a symlink to ~/Library/Application Support, so
-# XDG-following tools (fish, chezmoi itself, etc.) share the "proper" macOS
-# config location instead of a separate ~/.config tree.
-#
-# Runs before everything else (numbered ahead of 10-install-homebrew) since
-# other scripts and chezmoi's own managed targets write under ~/.config -
-# this needs to be in place first, not migrated around afterward.
-set -euo pipefail
+# Symlinks ~/.config/fish and ~/.config/homebrew to their real locations
+# under ~/Library/Application Support, so those two tools share the
+# "proper" macOS config location. Scoped to just these two subdirectories,
+# not the whole ~/.config root: chezmoi validates the entire source tree
+# structurally, so a directory-typed entry (dot_config/systemd, needed as a
+# real directory on Linux) and a symlink-typed entry for the same target
+# can never coexist, even behind OS-conditional ignore rules - confirmed
+# this the hard way. Real content for fish/homebrew lives under
+# Library/Application Support/ as its own independent target; the matching
+# dot_config/fish and dot_config/homebrew entries are fully excluded from
+# chezmoi's managed state on darwin (see .chezmoiignore), so chezmoi never
+# has a reason to touch these paths itself and re-clobber the symlinks -
+# verified stable across repeated applies before relying on that.
+set -uo pipefail
 
-CONFIG_DIR="{{ .chezmoi.homeDir }}/.config"
-APPSUPPORT_DIR="{{ .chezmoi.homeDir }}/Library/Application Support"
+APPSUPPORT="{{ .chezmoi.homeDir }}/Library/Application Support"
+mkdir -p "{{ .chezmoi.homeDir }}/.config" "$APPSUPPORT/fish" "$APPSUPPORT/homebrew"
 
-if [ -L "$CONFIG_DIR" ] && [ "$(readlink "$CONFIG_DIR")" = "$APPSUPPORT_DIR" ]; then
-    exit 0
-fi
+overall_failure=0
+for name in fish homebrew; do
+    link="{{ .chezmoi.homeDir }}/.config/$name"
+    target="$APPSUPPORT/$name"
 
-mkdir -p "$APPSUPPORT_DIR"
-
-if [ -d "$CONFIG_DIR" ] && [ ! -L "$CONFIG_DIR" ]; then
-    echo "==> migrating existing ~/.config content into ~/Library/Application Support"
-    # File-by-file, not directory-by-directory: things like
-    # ~/Library/Application Support/fish or .../homebrew commonly already
-    # exist (fish stores its own data there by default on macOS, separate
-    # from config; some casks/formulae write metadata there too) without
-    # actually containing anything of ours - those need to merge, not block.
-    #
-    # Deliberately not rsync --remove-source-files: combined with
-    # --ignore-existing, rsync treats a *skipped* file as "transferred" and
-    # deletes the source anyway - silently destroys exactly the file a
-    # collision is supposed to protect. Confirmed this the hard way before
-    # catching it in testing. Plain `mv`, one file at a time, has no such
-    # failure mode.
-    collision=0
-    while IFS= read -r -d '' src; do
-        rel="${src#"$CONFIG_DIR"/}"
-        dest="$APPSUPPORT_DIR/$rel"
-        if [ -e "$dest" ]; then
-            echo "WARNING: $dest already exists, leaving $src in place (not migrated)" >&2
-            collision=1
-        else
-            mkdir -p "$(dirname "$dest")"
-            mv "$src" "$dest"
-        fi
-    done < <(find "$CONFIG_DIR" -type f -print0)
-
-    find "$CONFIG_DIR" -type d -empty -delete 2>/dev/null || true
-
-    if [ "$collision" = "1" ] || [ -d "$CONFIG_DIR" ]; then
-        echo "ERROR: ~/.config still has un-migrated entries (see warnings above)," >&2
-        echo "       leaving it as a real directory - resolve manually, then re-run." >&2
-        exit 1
+    if [ -L "$link" ] && [ "$(readlink "$link")" = "$target" ]; then
+        continue
     fi
-fi
 
-ln -s "$APPSUPPORT_DIR" "$CONFIG_DIR"
-echo "==> ~/.config is now a symlink to ~/Library/Application Support"
+    if [ -e "$link" ] && [ ! -L "$link" ]; then
+        echo "==> migrating existing $link content into $target"
+        # File-by-file: things already in $target (fish stores its own
+        # data there by default on macOS; homebrew/casks write metadata
+        # there too) need to merge, not block. Plain mv, never
+        # rsync --remove-source-files --ignore-existing: that combination
+        # silently deletes a skipped (colliding) source file without ever
+        # copying it - confirmed this destroys data before it ever ran for
+        # real.
+        collision=0
+        while IFS= read -r -d '' src; do
+            rel="${src#"$link"/}"
+            dest="$target/$rel"
+            if [ -e "$dest" ]; then
+                echo "WARNING: $dest already exists, leaving $src in place (not migrated)" >&2
+                collision=1
+            else
+                mkdir -p "$(dirname "$dest")"
+                mv "$src" "$dest"
+            fi
+        done < <(find "$link" -type f -print0)
+        find "$link" -type d -empty -delete 2>/dev/null || true
+
+        if [ "$collision" = "1" ] || [ -e "$link" ]; then
+            echo "ERROR: $link still has un-migrated entries (see warnings above)," >&2
+            echo "       leaving it as-is - resolve manually, then re-run." >&2
+            overall_failure=1
+            continue
+        fi
+    fi
+
+    ln -sf "$target" "$link"
+done
+
+exit "$overall_failure"
 {{ end -}}

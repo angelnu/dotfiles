@@ -6,13 +6,24 @@ One repo for macOS, Bazzite (gaming) my Linux dev server.
   detected automatically — no need to say "mac"), machine `role`
   (`default` / `gaming`), and `user` (`.chezmoi.username`, detected
   automatically, for future per-user config)
-- **macOS `~/.config`**: made a symlink to `~/Library/Application Support`
+- **macOS config location**: `~/.config/fish` and `~/.config/homebrew` are
+  symlinked to `~/Library/Application Support/{fish,homebrew}`
   (`.chezmoiscripts/run_once_before_05-macos-config-symlink.sh.tmpl`), so
-  XDG-following tools share the "proper" macOS config location. Runs before
-  anything else writes under `~/.config`; safely migrates any existing
-  content there first (refuses to finish - leaves it as a real directory -
-  if something with the same name already exists in Application Support,
-  rather than risk clobbering it).
+  those tools share the "proper" macOS config location. The real content
+  lives under `Library/Application Support/` in the source tree; `dot_config/
+  fish` and `dot_config/homebrew` forward to it via `include` so there's one
+  canonical copy, used as real directories on Linux and as the symlink
+  target on macOS. Scoped to just these two subdirectories, not the whole
+  `~/.config` root: chezmoi validates its entire source tree structurally,
+  so a directory-typed entry (`dot_config/systemd`, needed as a real
+  directory on Linux) and a symlink-typed entry for the same target can
+  never coexist in one repo, even behind OS-conditional ignore rules -
+  confirmed the hard way, after an earlier whole-root-symlink attempt hit
+  exactly this conflict. Safely migrates any existing content in either
+  directory first (refuses to finish for the affected directory - leaves it
+  as-is - if something with the same name already exists in Application
+  Support, rather than risk clobbering it; other, non-colliding directories
+  still complete independently).
 - **Packages**: single list in `.chezmoidata/packages.yaml` → rendered into a
   real `~/.config/homebrew/Brewfile` → applied with `brew bundle`
   (formulae + casks on macOS, formulae + Flatpaks on Bazzite)
