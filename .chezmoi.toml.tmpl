@@ -1,7 +1,6 @@
 {{/* Prompted once per machine, stored in ~/.config/chezmoi/chezmoi.toml */}}
-{{/* mac vs. linux is detected from .chezmoi.os; "role" only distinguishes gaming rigs. */}}
-{{- $role := promptChoiceOnce . "role" "Machine role" (list "default" "gaming") -}}
-{{- $prune := promptBoolOnce . "prune" "Remove packages/files not declared in the repo (prune)" true -}}
+{{/* mac vs. linux is detected from .chezmoi.os; "role" only distinguishes headless servers. */}}
+{{- $role := promptChoiceOnce . "role" "Machine role" (list "default" "server") -}}
 
 {{/*
   The age identity must exist BEFORE chezmoi decrypts any encrypted_ files,
@@ -32,11 +31,8 @@ encryption = "age"
 [data]
     role = {{ $role | quote }}
     user = {{ .chezmoi.username | quote }}
-    gaming = {{ eq $role "gaming" }}
-    # The only non-gaming Linux machine today is the dev server.
-    # Update this when new roles are added if they should count as a server too.
-    server = {{ and (eq .chezmoi.os "linux") (eq $role "default") }}
-    prune = {{ $prune }}
+    server = {{ eq $role "server" }}
+    prune = true
 
 [diff]
     exclude = ["scripts"]

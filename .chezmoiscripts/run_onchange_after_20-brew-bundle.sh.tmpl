@@ -26,12 +26,11 @@ brew trust --tap {{ . | quote }}
 echo "==> Installing/upgrading declared packages"
 brew bundle install --file="$BREWFILE"
 
-{{ if .prune -}}
 # --- Destructive phase: remove anything NOT in the Brewfile ---
 # Extra flags opt in to non-formula package types. Verify the exact flag names
 # for your brew version with: brew bundle cleanup --help
 CLEANUP_FLAGS=(--file="$BREWFILE")
-{{ if and (eq .chezmoi.os "linux") .gaming -}}
+{{ if and (eq .chezmoi.os "linux") (not .server) -}}
 CLEANUP_FLAGS+=(--flatpaks)
 {{ end -}}
 
@@ -53,6 +52,3 @@ else
         esac
     fi
 fi
-{{ else -}}
-echo "==> Pruning disabled for this machine (set prune = true in chezmoi.toml)"
-{{ end -}}

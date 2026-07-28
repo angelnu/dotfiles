@@ -1,10 +1,10 @@
 # Dotfiles (chezmoi + Homebrew + age)
 
-One repo for macOS, Bazzite (gaming) my Linux dev server.
+One repo for macOS and Linux machines (e.g. the dev server).
 
 - **Dotfiles/config**: chezmoi templates, branched on OS (`.chezmoi.os`,
   detected automatically — no need to say "mac"), machine `role`
-  (`default` / `gaming`), and `user` (`.chezmoi.username`, detected
+  (`default` / `server`), and `user` (`.chezmoi.username`, detected
   automatically, for future per-user config)
 - **macOS Application Support**: `~/Library/Application Support/{fish,
   homebrew,sops}` are symlinked to their real locations under `~/.config`
@@ -36,7 +36,7 @@ One repo for macOS, Bazzite (gaming) my Linux dev server.
   rather than risk clobbering it; the others still complete independently).
 - **Packages**: single list in `.chezmoidata/packages.yaml` → rendered into a
   real `~/.config/homebrew/Brewfile` → applied with `brew bundle`
-  (formulae + casks on macOS, formulae + Flatpaks on Bazzite)
+  (formulae + casks on macOS, formulae + Flatpaks on non-server Linux)
 - **Secrets**: age-encrypted files committed to this repo (public); the age
   *private key* is the only secret outside git. It's the same identity used
   with sops, kept locally at `~/.config/sops/age/keys.txt`, pasted once at
@@ -87,9 +87,11 @@ The repo is public, so cloning needs no auth at all:
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
 ```
 
-Prompts once for `role` (default/gaming) and `prune`. OS and username are
-detected automatically, not prompted - and git `name`/`email` aren't prompted
-for at all, see "Per-user identity" below.
+Prompts once for `role` (default/server). OS and username are detected
+automatically, not prompted - and git `name`/`email` aren't prompted for at
+all, see "Per-user identity" below. Pruning (removing anything not declared
+in `packages.yaml`) always runs; see "Packages" below to disable it per-run
+or per-machine.
 
 It will also ask you to paste the age private key, unless
 `~/.config/sops/age/keys.txt` already exists — e.g. because you copied it
@@ -206,9 +208,10 @@ declared in the Brewfile. Both run from
 which re-fires whenever `packages.yaml` changes. So deleting a line from
 `packages.yaml` uninstalls it fleet-wide on the next `chezmoi update`.
 
-The cleanup phase prints what it would remove and asks before doing it. Set
-`BREW_PRUNE_CONFIRM=yes` for unattended runs, or answer `false` to the `prune`
-prompt to disable the destructive phase on a given machine.
+The cleanup phase only runs at all if there's something to remove (skipped
+silently otherwise), and prints what it would remove and asks before doing
+it. Set `BREW_PRUNE_CONFIRM=yes` for unattended runs (e.g. the daily
+auto-update timer) to skip that confirmation.
 
 Caveats:
 - Cleanup only manages what brew knows about. Things installed via `dnf`,
