@@ -1,4 +1,5 @@
 README.md
+cloud-init/**
 
 {{ if ne .chezmoi.os "linux" }}
 .config/systemd/**

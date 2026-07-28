@@ -1,0 +1,66 @@
+#cloud-config
+# Proxmox cloud-init user-data for a fresh Ubuntu Server 24.04 LTS VM, to be
+# followed by an interactive `chezmoi init --apply angelnu/dotfiles` (see
+# cloud-init/README.md). NOT applied by chezmoi itself - excluded via
+# .chezmoiignore, since this provisions the VM *before* chezmoi exists on it.
+#
+# Ubuntu 24.04+ specifically: Homebrew 6.0+ requires glibc 2.39+, which rules
+# out older Ubuntu/Debian releases (they'd fail bottle installs or force
+# from-source builds for everything).
+
+hostname: dotfiles-server
+timezone: UTC
+
+users:
+  - name: angel
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      # Keep in sync with private_dot_ssh/*.pub in the dotfiles repo - all
+      # public, safe to commit/embed. Trim to just the key(s) you actually
+      # want able to log into this VM.
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMo5WSbzKExEfFp/wGAtdPuzI0Fp0TDryLP1MZ61XgHd angel@nix"
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDCkuThT/UxlI8RYnxJIoQ/5QmR2C9CfXFpMEZ2z+TEVGljS51gUGD2pWNj8e5mDt/A0G1+F/LqxApeHf1jcM5Z7Y4m/P59syU+jczV5NYnA4jl9QxJ0sEoph+wAXd4ZSPthEJ5VPqkZ6kmqiBIo3QHkjmvxOGb8uoVzofbQjRD2qrbl1HJvoAZVbAGdj27Lbq2ht/83LG3df6+beoPMNKm0BXzNRAcv8g5IDw3/eQK8NSD0qTAr+d4V0xTPMzO9vevmhUOjv/hCuMQAPGao7M2mfDwqoDtMXiSKyrUqLTy7UgwZK3LCINxyTnTjBV+SDqgc5T2J5bd4QTlZ12OCLx6Htecnxc+z7MpekOvsRTiQJJFzy186ZH/dtWcL36pS96xBM9ToskMkZb4e625iVedm4TL6jhEG5E4mQpQ1mYwugjdmQkRRAnfJJkJWLFlADHejPbYTEFd3yOylHQrgMoph9OVzwjBtXelM45pC/BeaNOvG/8RK2xtJH6Mekx3auT0PMy9qsDjtrvCQo4yymLZ/+LIy3y4oo/1+jzNKS/g1ZS0pCd5CMJJVTvLQDwzo4CAbbUvkWUZ9w0zXGilB64tT5xyO9XlZSswORpLNZu+tG9horMzBt1Ovk8sxhZYmHlb0nxBPLu10yZKvByLfFkSnwHFJjBLgTooDQ2U4PQUXQ== ansible_phoenix"
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAjsC7lRkcXPBluRyhA0EWNgOFlc1dg4TxxwOIwCXW6k3KEAUBCV7q6HEHY7W4qmoGvCPREvBT9l1nY8mB9pWeCdExIiGfJKKEUfGpjglMNdFq3/ONGoHjJaTlrXDG9Pr4FSpGpyYhhkTEcusmIWTQgqCh+qV8r9zqaNj/ocHolf7BoeZJbQ7RfrDgKqUcP5cPvD5tLfsdYTS7sSkhRDuXksbrt7PHleZrrg3VqxRdRKf2JtHoeD6kDfsimJwRc+X/LLC60EytBrqiGtbreMklB4hGpl/iySuTx7d29UZDi9LKFurkO50+WBKLApGlwrLU8gpBxhT+NdBDoc5t9JwFyw=="
+
+# Explicit rather than relying on the image's default: guarantees SSH access
+# regardless of what a given cloud image ships with.
+packages:
+  - openssh-server
+  # Homebrew-on-Linux's own documented prerequisites:
+  # https://docs.brew.sh/Homebrew-on-Linux
+  - build-essential
+  - procps
+  - curl
+  - file
+  - git
+package_update: true
+
+ssh_pwauth: false
+disable_root: true
+
+runcmd:
+  - systemctl enable --now ssh
+  # Pre-seed the non-secret chezmoi init prompts (role/prune) so only the
+  # age private key remains an interactive step. promptChoiceOnce/
+  # promptBoolOnce read from this [data] section instead of prompting when
+  # a value's already present - verified this against the real template
+  # before relying on it here.
+  - install -d -m 700 -o angel -g angel /home/angel/.config/chezmoi
+  - |
+    cat > /home/angel/.config/chezmoi/chezmoi.toml <<'EOF'
+    [data]
+        role = "default"
+        prune = true
+    EOF
+  - chown angel:angel /home/angel/.config/chezmoi/chezmoi.toml
+  - chmod 600 /home/angel/.config/chezmoi/chezmoi.toml
+
+final_message: |
+  cloud-init done after $UPTIME seconds.
+  SSH in as angel and run:
+    sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
+  It'll only prompt for the age private key - role and prune are already
+  answered.
