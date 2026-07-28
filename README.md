@@ -152,10 +152,11 @@ needed. If the username isn't found, `user.name`/`user.email` are just left
 blank rather than failing the whole `apply`/`update` run (this file can
 render unattended, via the daily auto-update timer, so it can't prompt).
 
-To add a user, decrypt the file
-(`age -d -i ~/.config/sops/age/keys.txt .chezmoisecrets/users.yaml.age`), edit
-it, and re-encrypt it to the same recipient (the `age1...` value in
-`.chezmoi.toml.tmpl`'s `[age]` section).
+To add a user, run `scripts/edit-users-secret.sh` - decrypts it to a temp
+file, opens VS Code, waits for you to close the tab, re-encrypts it back in
+place, and cleans up the temp file either way. Not chezmoi-managed
+(`scripts/**` in `.chezmoiignore`), so it's just there to run directly from
+the checkout, not applied anywhere.
 
 This deliberately lives outside `.chezmoidata/`, not inside it: chezmoi
 eagerly parses *every* file under `.chezmoidata/` as one of its known data
