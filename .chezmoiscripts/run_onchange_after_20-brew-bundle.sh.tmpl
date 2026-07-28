@@ -35,17 +35,23 @@ CLEANUP_FLAGS=(--file="$BREWFILE")
 CLEANUP_FLAGS+=(--flatpaks)
 {{ end -}}
 
-echo "==> Packages that would be removed:"
-brew bundle cleanup "${CLEANUP_FLAGS[@]}"
+cleanup_output="$(brew bundle cleanup "${CLEANUP_FLAGS[@]}")"
 
-if [ "${BREW_PRUNE_CONFIRM:-ask}" = "yes" ]; then
-    brew bundle cleanup --force "${CLEANUP_FLAGS[@]}"
+if [ -z "$cleanup_output" ]; then
+    echo "==> Nothing to remove"
 else
-    read -r -p "Proceed with uninstall? [y/N] " reply </dev/tty || reply=n
-    case "$reply" in
-        [yY]*) brew bundle cleanup --force "${CLEANUP_FLAGS[@]}" ;;
-        *)     echo "==> Skipped cleanup. Run manually when ready." ;;
-    esac
+    echo "==> Packages that would be removed:"
+    echo "$cleanup_output"
+
+    if [ "${BREW_PRUNE_CONFIRM:-ask}" = "yes" ]; then
+        brew bundle cleanup --force "${CLEANUP_FLAGS[@]}"
+    else
+        read -r -p "Proceed with uninstall? [y/N] " reply </dev/tty || reply=n
+        case "$reply" in
+            [yY]*) brew bundle cleanup --force "${CLEANUP_FLAGS[@]}" ;;
+            *)     echo "==> Skipped cleanup. Run manually when ready." ;;
+        esac
+    fi
 fi
 {{ else -}}
 echo "==> Pruning disabled for this machine (set prune = true in chezmoi.toml)"
