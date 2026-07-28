@@ -13,6 +13,13 @@ timezone: UTC
 
 users:
   - name: angel
+    gecos: "Angel Nunez Mencias"
+    # No "networkmanager": Ubuntu Server uses netplan, not NetworkManager,
+    # by default - that group likely doesn't exist on this image, and
+    # adding a user to a nonexistent group fails cloud-init outright.
+    # No "docker" here either, for the same reason: it doesn't exist until
+    # Docker is installed in runcmd below, which runs after this - added via
+    # usermod there instead.
     groups: [sudo]
     shell: /bin/bash
     sudo: "ALL=(ALL) NOPASSWD:ALL"
@@ -43,6 +50,20 @@ disable_root: true
 
 runcmd:
   - systemctl enable --now ssh
+
+  # Docker Engine + Compose plugin, via Docker's official apt repo rather
+  # than Ubuntu's own "docker.io" package (typically older, and lacks the
+  # compose plugin). Matches the old nix config's `extraGroups = [ "docker" ]`.
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - |
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+      > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - usermod -aG docker angel
+
   # Pre-seed the non-secret chezmoi init prompts (role/prune) so only the
   # age private key remains an interactive step. promptChoiceOnce/
   # promptBoolOnce read from this [data] section instead of prompting when
