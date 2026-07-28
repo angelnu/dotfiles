@@ -43,7 +43,6 @@ packages:
       - wireguard-tools
       - podman
       - screen
-      - android-platform-tools  # was "android-tools" in nix; adb/fastboot
       - wget
       - yq               # YAML/JSON processor
       - hashicorp/tap/vault     # HashiCorp Vault
@@ -92,6 +91,9 @@ packages:
     # --- development ---
     - postman          # API development GUI
     - drawio           # diagramming tool
+    - android-platform-tools  # was "android-tools" in nix; adb/fastboot.
+                              # No longer a formula (homebrew migrated it to
+                              # a cask); no Linux equivalent, so mac-only now.
 
     # --- Others ---
     - slack
