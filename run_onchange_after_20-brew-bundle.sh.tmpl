@@ -10,6 +10,15 @@ for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/b
     if [ -x "$b" ]; then eval "$("$b" shellenv)"; break; fi
 done
 
+# Third-party taps need explicit trust before their formulae can load. Tap
+# and trust them here, before `brew bundle install` gets to the formula
+# lines that need them - these are taps we declared ourselves in
+# packages.yaml, not arbitrary ones, so trust them automatically rather than
+# requiring a manual step per machine.
+{{ range .packages.taps -}}
+brew tap {{ . | quote }}
+brew trust --tap {{ . | quote }}
+{{ end }}
 echo "==> Installing/upgrading declared packages"
 brew bundle install --file="$BREWFILE"
 
