@@ -1,8 +1,10 @@
 {{/* Rendered from .chezmoidata/packages.yaml — this file IS the desired state. */}}
+{{- range .packages.taps }}
+tap "{{ . }}"
+{{ end -}}
 {{- $brews := .packages.brews.common }}
 {{- $osBrews := index .packages.brews .chezmoi.os }}
 {{- if $osBrews }}{{ $brews = concat $brews $osBrews }}{{ end }}
-{{- if .server }}{{ $brews = concat $brews .packages.server_brews }}{{ end }}
 {{ range $brews -}}
 brew "{{ . }}"
 {{ end -}}
@@ -11,8 +13,13 @@ brew "{{ . }}"
 cask "{{ . }}"
 {{ end -}}
 {{- end }}
-{{- if and (eq .chezmoi.os "linux") .gaming }}
-{{ range .packages.flatpaks -}}
+{{- if eq .chezmoi.os "linux" }}
+{{ range .packages.flatpaks.common -}}
 flatpak "{{ . }}"
 {{ end -}}
+{{- if not .server }}
+{{ range .packages.flatpaks.non_server -}}
+flatpak "{{ . }}"
+{{ end -}}
+{{- end }}
 {{- end }}

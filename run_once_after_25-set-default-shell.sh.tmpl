@@ -1,0 +1,32 @@
+#!/bin/bash
+# Sets fish (installed via Homebrew, see packages.yaml) as the login shell.
+# Runs after run_onchange_after_20-brew-bundle.sh.tmpl, which installs fish.
+set -euo pipefail
+
+FISH=""
+for b in /opt/homebrew/bin/fish /home/linuxbrew/.linuxbrew/bin/fish /usr/local/bin/fish; do
+    if [ -x "$b" ]; then FISH="$b"; break; fi
+done
+
+if [ -z "$FISH" ]; then
+    echo "==> fish not found, skipping login-shell change" >&2
+    exit 0
+fi
+
+if [ "$(uname)" = "Darwin" ]; then
+    CURRENT_SHELL="$(dscl . -read "$HOME" UserShell 2>/dev/null | awk '{print $2}')"
+else
+    CURRENT_SHELL="$(getent passwd "$(id -un)" | cut -d: -f7)"
+fi
+
+if [ "$CURRENT_SHELL" = "$FISH" ]; then
+    echo "==> login shell already fish"
+    exit 0
+fi
+
+# Requires root to register a new shell; will prompt for your password.
+grep -qxF "$FISH" /etc/shells || echo "$FISH" | sudo tee -a /etc/shells >/dev/null
+
+# chsh prompts for your account password (not sudo).
+chsh -s "$FISH"
+echo "==> login shell set to $FISH (takes effect on next login)"

@@ -1,0 +1,12 @@
+# Homebrew environment (formulae/casks come from .chezmoidata/packages.yaml).
+# Runs for every fish invocation (login/non-login, interactive or not) -
+# same semantics as home-manager's old `programs.fish.shellInit`.
+for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/bin/brew
+    if test -x $b
+        eval ($b shellenv fish)
+        break
+    end
+end
+
+# Load default SSH keys into the agent on every shell start.
+ssh-add

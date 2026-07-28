@@ -1,20 +1,119 @@
 packages:
+  taps:
+    - fluxcd/tap      # needed for fluxcd/tap/flux below
+    - hashicorp/tap   # needed for hashicorp/tap/vault below
+
   brews:
     common:
-      - git
+      # --- dotfiles baseline (not from the old nix config) ---
       - ripgrep
       - fzf
-      - jq
       - htop
-      - chezmoi
-      - age
+      - chezmoi         # this tool itself, so `chezmoi update` keeps working
+      - jq               # CLI JSON processor
+      - fish             # login shell, see dot_config/fish/config.fish.tmpl
+      - vim              # was "programs.vim" in nix, see dot_vimrc
+
+      # --- Kubernetes ---
+      - kubectl
+      - helm             # was "kubernetes-helm" in nix
+      - fluxcd/tap/flux  # was "fluxcd" in nix - NOT plain "flux" (homebrew core's
+                         # "flux" is unrelated: InfluxData's query language)
+      - openshift-cli    # was "openshift" in nix; provides the `oc` CLI
+
+      # --- secrets ---
+      - sops
+      - age              # also used as chezmoi's own encryption backend, see .chezmoi.toml.tmpl
+      - gnupg            # kept for tools that still expect gpg on PATH
+
+      # --- npm ---
+      - node             # was "nodejs" in nix; corepack ships bundled with node
+
+      # --- vpn ---
+      - openvpn
+      - openfortivpn
+
+      # --- development ---
+      - pre-commit       # manage git pre-commit hooks
+      - git              # so it's newer than the OS-bundled version
+      - go-task          # was "go-task" in nix; task runner/build tool (Taskfile)
+      - docker           # was "docker-client" in nix; CLI only, no daemon/engine bundled
+      - make             # was "gnumake" in nix
+      - act              # run GitHub Actions locally
+      - wireguard-tools
+      - podman
+      - screen
+      - android-platform-tools  # was "android-tools" in nix; adb/fastboot
+      - wget
+      - yq               # YAML/JSON processor
+      - hashicorp/tap/vault     # HashiCorp Vault
+
+      # --- Python (was python3.withPackages in nix) ---
+      - python3          # tracks Homebrew's current default python@X.Y
+      - pipx             # install/run Python CLIs in isolated envs
+      - uv               # fast Python package/venv manager
+      - tox              # Python test-environment runner
+
+      # --- Java ---
+      - maven
+      - openjdk          # was "jdk" in nix
+
+      # --- cloud ---
+      - juju
+      - ansible
+      - openstackclient  # was "openstackclient-full" in nix
+
+      # --- Others ---
+      - dos2unix         # convert DOS line endings to Unix
+      - openssh          # newer than the OS-bundled version
+      - postgresql
+      - minio-mc         # was "minio-client" in nix; S3-compatible object storage CLI
+      - cairo            # 2D graphics library, dependency for some tools
+      - ollama           # run/manage local LLMs
+
+      # --- terraform ---
+      - hashicorp/tap/terraform
+      - openssl          # needed to encrypt HPVS contracts
+
+      # --- shell/session helpers (were `programs.*` in nix, not home.packages) ---
+      - direnv           # was "programs.direnv"; per-directory env loading
+      - go               # was "programs.go"; Go toolchain
     darwin:
       - mas
-    linux: []  # linux-only CLI tools go here
+    linux:
+      - procps           # ps/top/free (GNU versions); mac already has native tools
+      - keychain         # ssh-agent front-end; mac already covered by osxkeychain credential helper
+
   casks:      # macOS GUI apps
+    # --- dotfiles baseline (not from the old nix config) ---
     - wezterm
-  flatpaks:   # Bazzite GUI apps (system-wide, from flathub)
-    - org.videolan.VLC
-  server_brews:
-    - kubectl
-    - flux
+    - visual-studio-code
+
+    # --- development ---
+    - postman          # API development GUI
+    - drawio           # diagramming tool
+
+    # --- Others ---
+    - slack
+    - discord
+    - openscad          # programmable 3D CAD
+    - dosbox-x-app       # DOS emulator
+    - wireshark-app       # network protocol analyzer
+
+  flatpaks:   # Linux GUI apps (system-wide, from flathub)
+    common: []            # installed on every Linux machine, regardless of role
+    non_server:           # installed on every Linux machine except the server
+      # --- dotfiles baseline (not from the old nix config) ---
+      - org.videolan.VLC
+      - com.visualstudio.code
+
+      # --- development ---
+      - com.getpostman.Postman
+      - com.jgraph.drawio.desktop
+
+      # --- Others ---
+      - com.slack.Slack
+      - com.discordapp.Discord
+      - org.openscad.OpenSCAD
+      - com.dosbox_x.DOSBox-X
+      - org.wireshark.Wireshark

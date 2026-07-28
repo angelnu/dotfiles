@@ -1,0 +1,15 @@
+provider_installation {
+  #filesystem_mirror {
+  #  path    = "{{ .chezmoi.homeDir }}/.terraform.d/plugins"
+  #}
+  #direct {
+  #  exclude = ["terraform. Local/*/*"]
+  #}
+  dev_overrides {
+    #"Foltik/vyoS" = "{{ .chezmoi.homeDir }}/code/terraform-provider-vyos"
+    "DNSMadeEasy/dme" = "{{ .chezmoi.homeDir }}/go/bin"
+    #"Telmate/proxmox" = "/bin"
+  }
+
+  direct {}
+}

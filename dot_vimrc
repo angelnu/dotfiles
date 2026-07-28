@@ -1,0 +1,3 @@
+" Use command-line mode instead of visual mode for the mouse.
+" Works on remote ssh systems too (":set mouse=" to disable per-session).
+set mouse=c

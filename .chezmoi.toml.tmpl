@@ -1,5 +1,6 @@
 {{/* Prompted once per machine, stored in ~/.config/chezmoi/chezmoi.toml */}}
-{{- $role := promptStringOnce . "role" "Machine role (mac / gaming / server)" -}}
+{{/* mac vs. linux is detected from .chezmoi.os; "role" only distinguishes gaming rigs. */}}
+{{- $role := promptChoiceOnce . "role" "Machine role" (list "default" "gaming") -}}
 {{- $email := promptStringOnce . "email" "Git email for this machine" -}}
 
 {{- $prune := promptBoolOnce . "prune" "Remove packages/files not declared in the repo (prune)" true -}}
@@ -7,17 +8,26 @@
 encryption = "age"
 
 [age]
-    # Private key: fetched from Bitwarden (or pasted) by run_once_before_00-age-key.sh
-    identity = "{{ .chezmoi.homeDir }}/.config/chezmoi/key.txt"
-    # Public key: safe to commit. Replace with your own (age-keygen output).
-    recipient = "age1REPLACE_ME_WITH_YOUR_PUBLIC_KEY"
+    # Private key: same identity used with sops. Pasted at bootstrap by
+    # run_once_before_00-age-key.sh, or drop the file at this path yourself
+    # before running chezmoi init.
+    identity = "{{ .chezmoi.homeDir }}/.config/sops/age/keys.txt"
+    # Public key: safe to commit.
+    recipient = "age19zycawkart4t4l7a238w0n2w0rmw6anjadwv9yr3ce3js4dz3dcqqgkvsw"
 
 [data]
     role = {{ $role | quote }}
     email = {{ $email | quote }}
+    user = {{ .chezmoi.username | quote }}
     gaming = {{ eq $role "gaming" }}
-    server = {{ eq $role "server" }}
+    # The only non-gaming Linux machine today is the dev server.
+    # Update this when new roles are added if they should count as a server too.
+    server = {{ and (eq .chezmoi.os "linux") (eq $role "default") }}
     prune = {{ $prune }}
 
 [diff]
     exclude = ["scripts"]
+
+[edit]
+    command = "code"
+    args = ["--wait"]

@@ -1,10 +1,24 @@
 [user]
-    name = Angel
+    name = Angel Nunez Mencias
     email = {{ .email }}
+    # Literal key value (not a path) so this still works inside dev
+    # containers, where .gitconfig gets mounted/copied in but ~/.ssh does
+    # not - signing there relies on the forwarded ssh-agent instead.
+    signingKey = "{{ include "private_dot_ssh/private_readonly_id_ed25519.pub" | trim }}"
 [init]
     defaultBranch = main
 [pull]
     rebase = true
+[rebase]
+    autoStash = true
+[commit]
+    gpgSign = true
+[tag]
+    gpgSign = true
+[gpg]
+    format = ssh
+[diff "sopsdiffer"]
+    textconv = "sops -d"
 {{ if eq .chezmoi.os "darwin" }}
 [credential]
     helper = osxkeychain

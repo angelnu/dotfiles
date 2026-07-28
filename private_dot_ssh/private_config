@@ -1,0 +1,19 @@
+Host *
+    AddKeysToAgent yes
+    ForwardAgent yes
+
+Match originalhost casa exec "ping -t1 -c1 dev.lan"
+    Port 22
+    HostName dev.lan
+    User root
+
+Host casa
+    Port 22322
+    HostName casa96.angelnu.com
+    User angel
+
+Host nas
+    Port 22
+    HostName nas.home.angelnu.com
+    User anunez
+    ProxyJump casa

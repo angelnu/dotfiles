@@ -1,9 +1,9 @@
 #!/bin/sh
 # Ensures the age private key exists BEFORE chezmoi decrypts any encrypted_ files.
-# Priority: existing key > Bitwarden CLI (bw) > rbw > manual paste.
+# Priority: existing key file > manual paste.
 set -eu
 
-KEY="{{ .chezmoi.homeDir }}/.config/chezmoi/key.txt"
+KEY="{{ .chezmoi.homeDir }}/.config/sops/age/keys.txt"
 
 if [ -f "$KEY" ]; then
     exit 0
@@ -12,19 +12,8 @@ fi
 mkdir -p "$(dirname "$KEY")"
 umask 077
 
-if command -v bw >/dev/null 2>&1; then
-    echo "==> Fetching age key from Bitwarden (item: chezmoi-age-key)"
-    # Needs a session: run `export BW_SESSION=$(bw unlock --raw)` first,
-    # otherwise bw will prompt interactively.
-    bw get notes chezmoi-age-key > "$KEY"
-elif command -v rbw >/dev/null 2>&1; then
-    echo "==> Fetching age key from Bitwarden via rbw (item: chezmoi-age-key)"
-    rbw get chezmoi-age-key > "$KEY"
-else
-    echo "==> No Bitwarden CLI found."
-    echo "    Paste your age private key (AGE-SECRET-KEY-1...), then Ctrl-D:"
-    cat > "$KEY"
-fi
+echo "==> Paste your age private key (same identity used with sops; AGE-SECRET-KEY-1...), then Ctrl-D:"
+cat > "$KEY"
 
 chmod 600 "$KEY"
 

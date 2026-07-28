@@ -1,31 +1,64 @@
 # Dotfiles (chezmoi + Homebrew + age)
 
-One repo for macOS, Bazzite (gaming) and the Linux server.
+One repo for macOS, Bazzite (gaming) my Linux dev server.
 
-- **Dotfiles/config**: chezmoi templates, branched on OS and machine `role`
+- **Dotfiles/config**: chezmoi templates, branched on OS (`.chezmoi.os`,
+  detected automatically — no need to say "mac"), machine `role`
+  (`default` / `gaming`), and `user` (`.chezmoi.username`, detected
+  automatically, for future per-user config)
 - **Packages**: single list in `.chezmoidata/packages.yaml` → rendered into a
   real `~/.config/homebrew/Brewfile` → applied with `brew bundle`
   (formulae + casks on macOS, formulae + Flatpaks on Bazzite)
-- **Secrets**: age-encrypted files committed to this repo; the age *private key*
-  is the only secret outside git — Bitwarden item `chezmoi-age-key`, or pasted
-  once at bootstrap
+- **Secrets**: age-encrypted files committed to this repo; the age *private
+  key* is the only secret outside git. It's the same identity used with sops,
+  kept locally at `~/.config/sops/age/keys.txt`, pasted once at bootstrap.
+- **Commit signing**: SSH-based (`gpg.format = ssh`), via `ssh-agent` — this
+  matters for signing commits made inside VS Code dev containers, which get
+  the agent forwarded but not `~/.ssh`. `dot_gitconfig.tmpl` inlines the
+  literal public key into `user.signingKey` at render time (via chezmoi's
+  `include`, reading `private_dot_ssh/private_readonly_id_ed25519.pub`)
+  rather than pointing at a file path, so it keeps working wherever
+  `.gitconfig` ends up even without `~/.ssh` present. That `.pub` file is
+  still the single source of truth — it's also written to `~/.ssh/` on
+  `chezmoi apply` for everything else that expects it there. Both halves of
+  the keypair live in the repo under `private_dot_ssh/` — the public key in
+  plaintext, the private key age-encrypted
+  (`encrypted_private_readonly_id_ed25519.age`) — and are written to
+  `~/.ssh/` automatically on `chezmoi apply`. Nothing to paste for the SSH
+  key at all.
 
 ## One-time setup
 
 ```sh
-age-keygen -o key.txt                 # 1. generate keypair
+age-keygen -o keys.txt                # 1. generate keypair (or reuse an
+                                       #    existing sops age identity)
 # 2. put the PUBLIC key into .chezmoi.toml.tmpl (recipient = "age1...")
-# 3. store key.txt contents in Bitwarden as secure note: chezmoi-age-key
+# 3. keep keys.txt somewhere you control (password manager entry, offline
+#    backup, etc.) so you can paste it on future machines
+
+chezmoi add --encrypt --follow ~/.ssh/id_ed25519       # 4. commit the private
+                                                        #    signing key, encrypted
+chezmoi add --follow ~/.ssh/id_ed25519.pub             # 5. commit the public key
+                                                        #    in plaintext (not secret)
+# dot_gitconfig.tmpl already points user.signingKey at ~/.ssh/id_ed25519.pub,
+# so no further edits needed there.
 ```
 
 ## Bootstrap a machine
 
 ```sh
-export BW_SESSION=$(bw unlock --raw)   # optional, for non-interactive key fetch
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply <your-git-remote>
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
 ```
 
-Prompts once for `role` (mac/gaming/server), git email, and `prune`.
+Prompts once for `role` (default/gaming), git email, and `prune`. OS and
+username are detected automatically, not prompted. It will also pause to ask
+you to paste the age private key (Ctrl-D to finish), unless
+`~/.config/sops/age/keys.txt` already exists — e.g. because you copied it
+there yourself ahead of time. Never paste it into a chat/LLM session; type or
+pipe it in locally (`pbpaste`, a password manager's CLI, etc.). Once that key
+is in place, chezmoi decrypts everything else on its own — including the SSH
+signing key — no further pasting needed.
+
 Answers land in `~/.config/chezmoi/chezmoi.toml`.
 
 ---
