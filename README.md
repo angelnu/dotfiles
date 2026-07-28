@@ -6,6 +6,13 @@ One repo for macOS, Bazzite (gaming) my Linux dev server.
   detected automatically — no need to say "mac"), machine `role`
   (`default` / `gaming`), and `user` (`.chezmoi.username`, detected
   automatically, for future per-user config)
+- **macOS `~/.config`**: made a symlink to `~/Library/Application Support`
+  (`.chezmoiscripts/run_once_before_05-macos-config-symlink.sh.tmpl`), so
+  XDG-following tools share the "proper" macOS config location. Runs before
+  anything else writes under `~/.config`; safely migrates any existing
+  content there first (refuses to finish - leaves it as a real directory -
+  if something with the same name already exists in Application Support,
+  rather than risk clobbering it).
 - **Packages**: single list in `.chezmoidata/packages.yaml` → rendered into a
   real `~/.config/homebrew/Brewfile` → applied with `brew bundle`
   (formulae + casks on macOS, formulae + Flatpaks on Bazzite)

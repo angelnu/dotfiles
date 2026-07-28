@@ -101,6 +101,8 @@ packages:
     - android-platform-tools  # was "android-tools" in nix; adb/fastboot.
                               # No longer a formula (homebrew migrated it to
                               # a cask); no Linux equivalent, so mac-only now.
+    - rancher          # Rancher Desktop; container/Kubernetes management
+    - utm              # QEMU-based VM UI
 
     # --- Others ---
     - slack

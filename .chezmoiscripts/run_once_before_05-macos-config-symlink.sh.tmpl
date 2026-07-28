@@ -1,0 +1,46 @@
+{{ if eq .chezmoi.os "darwin" -}}
+#!/bin/bash
+# Makes ~/.config a symlink to ~/Library/Application Support, so
+# XDG-following tools (fish, chezmoi itself, etc.) share the "proper" macOS
+# config location instead of a separate ~/.config tree.
+#
+# Runs before everything else (numbered ahead of 10-install-homebrew) since
+# other scripts and chezmoi's own managed targets write under ~/.config -
+# this needs to be in place first, not migrated around afterward.
+set -euo pipefail
+
+CONFIG_DIR="{{ .chezmoi.homeDir }}/.config"
+APPSUPPORT_DIR="{{ .chezmoi.homeDir }}/Library/Application Support"
+
+if [ -L "$CONFIG_DIR" ] && [ "$(readlink "$CONFIG_DIR")" = "$APPSUPPORT_DIR" ]; then
+    exit 0
+fi
+
+mkdir -p "$APPSUPPORT_DIR"
+
+if [ -d "$CONFIG_DIR" ] && [ ! -L "$CONFIG_DIR" ]; then
+    echo "==> migrating existing ~/.config content into ~/Library/Application Support"
+    shopt -s dotglob nullglob
+    for entry in "$CONFIG_DIR"/*; do
+        base="$(basename "$entry")"
+        dest="$APPSUPPORT_DIR/$base"
+        if [ -e "$dest" ]; then
+            echo "WARNING: $dest already exists, leaving $entry in place (not migrated)" >&2
+        else
+            mv "$entry" "$dest"
+        fi
+    done
+    shopt -u dotglob nullglob
+
+    if [ -z "$(ls -A "$CONFIG_DIR")" ]; then
+        rmdir "$CONFIG_DIR"
+    else
+        echo "ERROR: ~/.config still has un-migrated entries (see warnings above)," >&2
+        echo "       leaving it as a real directory - resolve manually, then re-run." >&2
+        exit 1
+    fi
+fi
+
+ln -s "$APPSUPPORT_DIR" "$CONFIG_DIR"
+echo "==> ~/.config is now a symlink to ~/Library/Application Support"
+{{ end -}}
