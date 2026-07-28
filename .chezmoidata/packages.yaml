@@ -11,6 +11,8 @@ packages:
       - fzf
       - htop
       - chezmoi         # this tool itself, so `chezmoi update` keeps working
+      - gh               # GitHub CLI - not needed by anything in this repo,
+                         # just generally useful (e.g. creating repos via Claude Code)
       - jq               # CLI JSON processor
       - fish             # login shell, see dot_config/fish/config.fish.tmpl
       - vim              # was "programs.vim" in nix, see dot_vimrc
