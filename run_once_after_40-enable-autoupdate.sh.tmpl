@@ -1,0 +1,7 @@
+{{ if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+set -euo pipefail
+systemctl --user daemon-reload
+systemctl --user enable --now chezmoi-update.timer
+echo "==> chezmoi auto-update timer enabled"
+{{ end -}}

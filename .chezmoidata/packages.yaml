@@ -1,0 +1,20 @@
+packages:
+  brews:
+    common:
+      - git
+      - ripgrep
+      - fzf
+      - jq
+      - htop
+      - chezmoi
+      - age
+    darwin:
+      - mas
+    linux: []  # linux-only CLI tools go here
+  casks:      # macOS GUI apps
+    - wezterm
+  flatpaks:   # Bazzite GUI apps (system-wide, from flathub)
+    - org.videolan.VLC
+  server_brews:
+    - kubectl
+    - flux

@@ -1,0 +1,23 @@
+{{/* Prompted once per machine, stored in ~/.config/chezmoi/chezmoi.toml */}}
+{{- $role := promptStringOnce . "role" "Machine role (mac / gaming / server)" -}}
+{{- $email := promptStringOnce . "email" "Git email for this machine" -}}
+
+{{- $prune := promptBoolOnce . "prune" "Remove packages/files not declared in the repo (prune)" true -}}
+
+encryption = "age"
+
+[age]
+    # Private key: fetched from Bitwarden (or pasted) by run_once_before_00-age-key.sh
+    identity = "{{ .chezmoi.homeDir }}/.config/chezmoi/key.txt"
+    # Public key: safe to commit. Replace with your own (age-keygen output).
+    recipient = "age1REPLACE_ME_WITH_YOUR_PUBLIC_KEY"
+
+[data]
+    role = {{ $role | quote }}
+    email = {{ $email | quote }}
+    gaming = {{ eq $role "gaming" }}
+    server = {{ eq $role "server" }}
+    prune = {{ $prune }}
+
+[diff]
+    exclude = ["scripts"]

@@ -1,0 +1,13 @@
+#!/bin/bash
+# Installs Homebrew where it is missing. Bazzite ships it preinstalled.
+set -euo pipefail
+
+if command -v brew >/dev/null 2>&1 || [ -x /opt/homebrew/bin/brew ] \
+   || [ -x /home/linuxbrew/.linuxbrew/bin/brew ] || [ -x /usr/local/bin/brew ]; then
+    echo "==> Homebrew already present"
+    exit 0
+fi
+
+echo "==> Installing Homebrew"
+NONINTERACTIVE=1 /bin/bash -c \
+  "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"

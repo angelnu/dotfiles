@@ -1,0 +1,11 @@
+[user]
+    name = Angel
+    email = {{ .email }}
+[init]
+    defaultBranch = main
+[pull]
+    rebase = true
+{{ if eq .chezmoi.os "darwin" }}
+[credential]
+    helper = osxkeychain
+{{ end }}

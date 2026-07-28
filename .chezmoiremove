@@ -1,0 +1,16 @@
+{{/*
+Tombstone list. Anything listed here is DELETED from the target on every apply.
+Use for files that used to be managed and now must disappear fleet-wide.
+Globs are supported. Entries are relative to the home directory.
+Safe to prune an entry once every machine has applied it at least once.
+*/}}
+
+# --- examples, delete or replace ---
+# .config/oldapp
+# .local/bin/some-old-script
+# .vimrc
+
+{{ if ne .chezmoi.os "darwin" -}}
+# macOS-only leftovers that must not exist elsewhere
+Library/LaunchAgents/com.example.old.plist
+{{ end -}}

@@ -1,0 +1,6 @@
+[Unit]
+Description=chezmoi update (git pull + apply)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/env bash -lc 'chezmoi update --no-tty'
