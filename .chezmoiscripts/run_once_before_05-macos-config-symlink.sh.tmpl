@@ -20,21 +20,34 @@ mkdir -p "$APPSUPPORT_DIR"
 
 if [ -d "$CONFIG_DIR" ] && [ ! -L "$CONFIG_DIR" ]; then
     echo "==> migrating existing ~/.config content into ~/Library/Application Support"
-    shopt -s dotglob nullglob
-    for entry in "$CONFIG_DIR"/*; do
-        base="$(basename "$entry")"
-        dest="$APPSUPPORT_DIR/$base"
+    # File-by-file, not directory-by-directory: things like
+    # ~/Library/Application Support/fish or .../homebrew commonly already
+    # exist (fish stores its own data there by default on macOS, separate
+    # from config; some casks/formulae write metadata there too) without
+    # actually containing anything of ours - those need to merge, not block.
+    #
+    # Deliberately not rsync --remove-source-files: combined with
+    # --ignore-existing, rsync treats a *skipped* file as "transferred" and
+    # deletes the source anyway - silently destroys exactly the file a
+    # collision is supposed to protect. Confirmed this the hard way before
+    # catching it in testing. Plain `mv`, one file at a time, has no such
+    # failure mode.
+    collision=0
+    while IFS= read -r -d '' src; do
+        rel="${src#"$CONFIG_DIR"/}"
+        dest="$APPSUPPORT_DIR/$rel"
         if [ -e "$dest" ]; then
-            echo "WARNING: $dest already exists, leaving $entry in place (not migrated)" >&2
+            echo "WARNING: $dest already exists, leaving $src in place (not migrated)" >&2
+            collision=1
         else
-            mv "$entry" "$dest"
+            mkdir -p "$(dirname "$dest")"
+            mv "$src" "$dest"
         fi
-    done
-    shopt -u dotglob nullglob
+    done < <(find "$CONFIG_DIR" -type f -print0)
 
-    if [ -z "$(ls -A "$CONFIG_DIR")" ]; then
-        rmdir "$CONFIG_DIR"
-    else
+    find "$CONFIG_DIR" -type d -empty -delete 2>/dev/null || true
+
+    if [ "$collision" = "1" ] || [ -d "$CONFIG_DIR" ]; then
         echo "ERROR: ~/.config still has un-migrated entries (see warnings above)," >&2
         echo "       leaving it as a real directory - resolve manually, then re-run." >&2
         exit 1
