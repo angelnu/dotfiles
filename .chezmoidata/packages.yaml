@@ -109,6 +109,7 @@ packages:
       # --- dotfiles baseline (not from the old nix config) ---
       - org.videolan.VLC
       - com.visualstudio.code
+      - com.brave.Browser
 
       # --- development ---
       - com.getpostman.Postman
