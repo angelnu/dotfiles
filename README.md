@@ -6,24 +6,34 @@ One repo for macOS, Bazzite (gaming) my Linux dev server.
   detected automatically — no need to say "mac"), machine `role`
   (`default` / `gaming`), and `user` (`.chezmoi.username`, detected
   automatically, for future per-user config)
-- **macOS config location**: `~/.config/fish` and `~/.config/homebrew` are
-  symlinked to `~/Library/Application Support/{fish,homebrew}`
-  (`.chezmoiscripts/run_once_before_05-macos-config-symlink.sh.tmpl`), so
-  those tools share the "proper" macOS config location. The real content
-  lives under `Library/Application Support/` in the source tree; `dot_config/
-  fish` and `dot_config/homebrew` forward to it via `include` so there's one
-  canonical copy, used as real directories on Linux and as the symlink
-  target on macOS. Scoped to just these two subdirectories, not the whole
-  `~/.config` root: chezmoi validates its entire source tree structurally,
-  so a directory-typed entry (`dot_config/systemd`, needed as a real
-  directory on Linux) and a symlink-typed entry for the same target can
-  never coexist in one repo, even behind OS-conditional ignore rules -
-  confirmed the hard way, after an earlier whole-root-symlink attempt hit
-  exactly this conflict. Safely migrates any existing content in either
-  directory first (refuses to finish for the affected directory - leaves it
-  as-is - if something with the same name already exists in Application
-  Support, rather than risk clobbering it; other, non-colliding directories
-  still complete independently).
+- **macOS Application Support**: `~/Library/Application Support/{fish,
+  homebrew,sops}` are symlinked to their real locations under `~/.config`
+  (`.chezmoiscripts/run_once_after_45-macos-appsupport-symlinks.sh.tmpl`),
+  so tools that look in Application Support find the same content.
+  Direction matters: `~/.config` stays a real, chezmoi-owned directory -
+  `dot_config/fish`, `dot_config/homebrew`, `dot_config/systemd` are all
+  normal, unconditional targets, identical on Linux and macOS, no
+  OS-specific exclusions needed. The symlinks live entirely in Application
+  Support instead, which isn't a chezmoi target at all, so nothing here
+  ever conflicts with or gets overwritten by chezmoi's own apply.
+
+  This is the opposite of the first two things we tried, both of which
+  failed for the same underlying reason: chezmoi validates its entire
+  source tree structurally and unconditionally re-enforces `~/.config` (or
+  any subpath with a real, chezmoi-managed entry, like `~/.config/fish`) as
+  a plain directory on every single apply, for as long as `dot_config/*`
+  exists anywhere in the source tree - confirmed this is true even for a
+  symlink pre-existing before `chezmoi apply` even starts, with zero script
+  involvement. A declarative `symlink_dot_config.tmpl` coexisting with
+  `dot_config/systemd` (needed as a real directory on Linux) hits an
+  outright "inconsistent state" error; an imperative script fighting the
+  same enforcement gets its symlink silently reverted, apply after apply.
+  Symlinking the other direction sidesteps the conflict entirely, since
+  chezmoi never has an opinion about Application Support in the first
+  place. Safely migrates any existing content in each of the three
+  directories first (refuses to finish for the affected one - leaves it
+  as-is - if something with the same name already exists under `~/.config`,
+  rather than risk clobbering it; the others still complete independently).
 - **Packages**: single list in `.chezmoidata/packages.yaml` → rendered into a
   real `~/.config/homebrew/Brewfile` → applied with `brew bundle`
   (formulae + casks on macOS, formulae + Flatpaks on Bazzite)

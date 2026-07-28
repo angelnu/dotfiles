@@ -1,7 +1,11 @@
 #!/bin/bash
 # Converges installed packages to exactly what the Brewfile declares.
-# Re-runs whenever the rendered Brewfile changes:
-# Brewfile hash: {{ include "dot_config/homebrew/Brewfile.tmpl" | sha256sum }}
+# Re-runs whenever packages.yaml changes. `include | sha256sum` on the
+# Brewfile template would hash its static template *source text*, not the
+# actual package data, so wouldn't reliably detect changes to
+# brews/casks/flatpaks - confirmed this doesn't render .tmpl files, only
+# returns raw bytes. Hashing the data itself doesn't have that problem.
+# packages hash: {{ .packages | toJson | sha256sum }}
 set -euo pipefail
 
 BREWFILE="{{ .chezmoi.homeDir }}/.config/homebrew/Brewfile"

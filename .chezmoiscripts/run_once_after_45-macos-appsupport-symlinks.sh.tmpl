@@ -1,0 +1,72 @@
+{{ if eq .chezmoi.os "darwin" -}}
+#!/bin/bash
+# Symlinks ~/Library/Application Support/{fish,homebrew,sops} to their real
+# locations under ~/.config, so tools that look in Application Support find
+# the same content. Direction matters: ~/.config stays a real,
+# chezmoi-owned directory (dot_config/fish, dot_config/homebrew,
+# dot_config/systemd are all normal, unconditional targets, same as
+# Linux - no exclusions needed). Application Support is not a chezmoi
+# target at all, so nothing here ever conflicts with or gets re-enforced
+# by chezmoi's own apply - unlike making ~/.config itself (or subpaths of
+# it) a symlink, which chezmoi unconditionally fights on every apply for
+# as long as dot_config/* exists anywhere in the source tree (confirmed
+# this repeatedly - true even for a symlink pre-existing before `chezmoi
+# apply` starts, with zero script involvement).
+set -uo pipefail
+
+CONFIG_DIR="{{ .chezmoi.homeDir }}/.config"
+APPSUPPORT_DIR="{{ .chezmoi.homeDir }}/Library/Application Support"
+mkdir -p "$APPSUPPORT_DIR"
+
+overall_failure=0
+for name in fish homebrew sops; do
+    link="$APPSUPPORT_DIR/$name"
+    target="$CONFIG_DIR/$name"
+
+    if [ -L "$link" ] && [ "$(readlink "$link")" = "$target" ]; then
+        continue
+    fi
+
+    if [ -e "$link" ] && [ ! -L "$link" ]; then
+        echo "==> migrating existing $link content into $target"
+        # File-by-file, not directory-by-directory, and never
+        # rsync --remove-source-files --ignore-existing (that combination
+        # silently deletes a skipped/colliding source file without ever
+        # copying it - confirmed this destroys data before it ever ran for
+        # real). Plain mv, per file, has no such failure mode.
+        mkdir -p "$target"
+        collision=0
+        while IFS= read -r -d '' src; do
+            rel="${src#"$link"/}"
+            dest="$target/$rel"
+            if [ -e "$dest" ]; then
+                echo "WARNING: $dest already exists, leaving $src in place (not migrated)" >&2
+                collision=1
+            else
+                mkdir -p "$(dirname "$dest")"
+                mv "$src" "$dest"
+            fi
+        done < <(find "$link" -type f -print0)
+        find "$link" -type d -empty -delete 2>/dev/null || true
+
+        if [ "$collision" = "1" ] || [ -e "$link" ]; then
+            echo "ERROR: $link still has un-migrated entries (see warnings above)," >&2
+            echo "       leaving it as-is - resolve manually, then re-run." >&2
+            overall_failure=1
+            continue
+        fi
+    fi
+
+    # A stale symlink from an earlier design (pointing the other direction,
+    # .config/$name -> Application Support/$name) may still exist at
+    # $target - chezmoi's own apply already replaces that with a real
+    # directory/files normally, but remove it defensively too.
+    if [ -L "$target" ]; then
+        rm -f "$target"
+    fi
+
+    ln -sf "$target" "$link"
+done
+
+exit "$overall_failure"
+{{ end -}}

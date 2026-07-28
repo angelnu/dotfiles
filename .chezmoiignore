@@ -4,19 +4,3 @@ cloud-init/**
 {{ if ne .chezmoi.os "linux" }}
 .config/systemd/**
 {{ end }}
-
-{{ if eq .chezmoi.os "darwin" -}}
-# fish and homebrew get symlinked to ~/Library/Application Support instead
-# (see .chezmoiscripts/run_once_before_05-macos-config-symlink.sh.tmpl and
-# Library/Application Support/ below) - these must be fully excluded, not
-# just their contents: chezmoi validates the whole source tree structurally,
-# so a directory-typed entry here and a symlink-typed entry for the same
-# target can never coexist, even behind this same OS-conditional check.
-.config/fish
-.config/fish/**
-.config/homebrew
-.config/homebrew/**
-{{ end -}}
-{{ if ne .chezmoi.os "darwin" -}}
-Library/**
-{{ end -}}
