@@ -14,7 +14,8 @@ One repo for macOS, Bazzite (gaming) my Linux dev server.
   with sops, kept locally at `~/.config/sops/age/keys.txt`, pasted once at
   bootstrap.
 - **Per-user identity**: git `name`/`email` are looked up from
-  `.chezmoisecrets/users.yaml.age`, keyed by system username — see below.
+  `.chezmoisecrets/users.yaml.age`, keyed by system username, directly in
+  `dot_gitconfig.tmpl` (the only place they're needed) — see below.
 - **Convenience**: `~/code/dotfiles` is a chezmoi-managed symlink to the
   actual chezmoi source checkout (`code/symlink_dotfiles.tmpl`), so it's
   reachable from the usual place alongside other projects.
@@ -59,27 +60,34 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
 ```
 
 Prompts once for `role` (default/gaming) and `prune`. OS and username are
-detected automatically, not prompted. Git `name`/`email` are looked up from
-`.chezmoisecrets/users.yaml.age` (see below) instead of being prompted, as
-long as your system username is in that dictionary.
+detected automatically, not prompted - and git `name`/`email` aren't prompted
+for at all, see "Per-user identity" below.
 
 It will also ask you to paste the age private key, unless
 `~/.config/sops/age/keys.txt` already exists — e.g. because you copied it
 there yourself ahead of time. This prompt happens during `chezmoi init`'s own
 config-generation step (`.chezmoi.toml.tmpl`), *before* `apply` touches
 anything — that placement matters: chezmoi decrypts every `encrypted_` file
-(and anything else read via `include`, like the users dictionary) while
-building its target state, which happens before any `run_once_before_`
-script gets to run, so a script-based prompt can never fire in time once the
-repo has encrypted files (we hit exactly this: `chezmoi init --apply` failed
-with "no such file or directory" because the age key wasn't there yet and
-nothing had prompted for it). Doing the prompt inside `chezmoi init` itself
-sidesteps that, since `init` always fully completes - including this prompt
-and writing the key file - before `apply` starts. Never paste the key into a
-chat/LLM session; type or pipe it in locally (`pbpaste`, a password
-manager's CLI, etc.) if you're scripting this instead of typing it at the
-prompt. Once that key is in place, chezmoi decrypts everything else on its
-own — including the SSH signing key — no further pasting needed.
+while building its target state, which happens before any
+`run_once_before_` script gets to run, so a script-based prompt can never
+fire in time once the repo has encrypted files (we hit exactly this: `chezmoi
+init --apply` failed with "no such file or directory" because the age key
+wasn't there yet and nothing had prompted for it). Doing the prompt inside
+`chezmoi init` itself sidesteps that, since `init` always fully completes -
+including this prompt and writing the key file - before `apply` starts.
+Never paste the key into a chat/LLM session; type or pipe it in locally
+(`pbpaste`, a password manager's CLI, etc.) if you're scripting this instead
+of typing it at the prompt. Once that key is in place, chezmoi decrypts
+everything else on its own — including the SSH signing key — no further
+pasting needed.
+
+The same "config not ready yet" ordering problem rules out looking up
+`name`/`email` here too: chezmoi's `decrypt` template function reads from the
+`[age]` section that *this very file* is producing, so calling it from inside
+`.chezmoi.toml.tmpl` always fails with "encryption not configured" - also
+confirmed the hard way. That's exactly why the lookup lives in
+`dot_gitconfig.tmpl` instead: by the time *that* renders, during `apply`,
+`[age]` has already been loaded from the config `init` finished generating.
 
 Cloning is anonymous (read-only), so pushing changes afterward still needs
 real auth. `run_once_after_15-switch-remote-to-ssh.sh.tmpl` switches the
@@ -103,16 +111,21 @@ system username:
 
 ```yaml
 users:
-  angel:
-    name: "Angel Nunez Mencias"
-    email: "git@angelnu.com"
+  someusername:
+    name: "Some User"
+    email: "someuser@example.com"
 ```
 
-`.chezmoi.toml.tmpl` decrypts and looks itself up by `.chezmoi.username`,
-falling back to prompting if the username isn't found. To add a user, decrypt
-the file (`age -d -i ~/.config/sops/age/keys.txt .chezmoisecrets/users.yaml.age`),
-edit it, and re-encrypt it to the same recipient
-(`age -r age19zycawkart4t4l7a238w0n2w0rmw6anjadwv9yr3ce3js4dz3dcqqgkvsw ...`).
+`dot_gitconfig.tmpl` decrypts it and looks itself up by `.chezmoi.username`
+when rendering `~/.gitconfig` - the only place `name`/`email` are actually
+needed. If the username isn't found, `user.name`/`user.email` are just left
+blank rather than failing the whole `apply`/`update` run (this file can
+render unattended, via the daily auto-update timer, so it can't prompt).
+
+To add a user, decrypt the file
+(`age -d -i ~/.config/sops/age/keys.txt .chezmoisecrets/users.yaml.age`), edit
+it, and re-encrypt it to the same recipient (the `age1...` value in
+`.chezmoi.toml.tmpl`'s `[age]` section).
 
 This deliberately lives outside `.chezmoidata/`, not inside it: chezmoi
 eagerly parses *every* file under `.chezmoidata/` as one of its known data
@@ -120,7 +133,7 @@ formats (yaml/json/toml/...) on every command, not just `init` - an
 unrecognized extension like `.age` there is a hard error on every future
 `apply`/`diff`/`update`, confirmed by testing it directly. A sibling
 `.chezmoisecrets/` directory isn't special to chezmoi, so it's left alone and
-only ever read explicitly, via `include`, from `.chezmoi.toml.tmpl`.
+only ever read explicitly, via `include`.
 
 ---
 

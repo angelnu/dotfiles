@@ -1,6 +1,23 @@
+{{- /*
+  name/email come from .chezmoisecrets/users.yaml.age (encrypted, keyed by
+  system username) rather than being prompted at `chezmoi init` - this is
+  the only place they're needed. `decrypt` works fine here (unlike inside
+  .chezmoi.toml.tmpl, which produces the [age] config decrypt itself needs -
+  a chicken-and-egg problem confirmed by hitting it on a fresh machine): by
+  the time this template renders during `apply`, [age] is already loaded
+  from the config that a prior `chezmoi init` already generated.
+*/ -}}
+{{- $usersYaml := (include ".chezmoisecrets/users.yaml.age") | decrypt | fromYaml -}}
+{{- $me := index $usersYaml.users .chezmoi.username -}}
+{{- $name := "" -}}
+{{- $email := "" -}}
+{{- if $me -}}
+  {{- $name = $me.name -}}
+  {{- $email = $me.email -}}
+{{- end -}}
 [user]
-    name = {{ .name }}
-    email = {{ .email }}
+    name = {{ $name }}
+    email = {{ $email }}
     # Literal key value (not a path) so this still works inside dev
     # containers, where .gitconfig gets mounted/copied in but ~/.ssh does
     # not - signing there relies on the forwarded ssh-agent instead.

@@ -20,35 +20,6 @@
   {{- end -}}
 {{- end -}}
 
-{{/*
-  Name/email are looked up from .chezmoisecrets/users.yaml.age, keyed by the
-  system username - keeps them out of chezmoi's own promptStringOnce cache
-  (which would otherwise store them, and any future users added to the
-  dictionary, unencrypted in each machine's own chezmoi.toml) and out of the
-  repo in plaintext (it's a public repo, other people's names/emails don't
-  belong in it even if yours already is via commit metadata). Requires the
-  age identity above to already exist, same as any other encrypted_ file.
-  Falls back to prompting if the username isn't in the dictionary.
-
-  NOT under .chezmoidata/: chezmoi eagerly parses every file in that
-  directory as one of its known data formats (yaml/json/toml/...) on every
-  command, not just `init` - an unrecognized extension like .age is a hard
-  error on every future `apply`/`diff`/`update`, not only here. A sibling
-  .chezmoisecrets/ directory isn't special to chezmoi, so it's left alone
-  and only read explicitly, right here, via `include`.
-*/}}
-{{- $usersYaml := (include ".chezmoisecrets/users.yaml.age") | decrypt | fromYaml -}}
-{{- $me := index $usersYaml.users .chezmoi.username -}}
-{{- $name := "" -}}
-{{- $email := "" -}}
-{{- if $me -}}
-  {{- $name = $me.name -}}
-  {{- $email = $me.email -}}
-{{- else -}}
-  {{- $name = promptStringOnce . "name" (printf "Full name for git commits (user %q isn't in .chezmoisecrets/users.yaml.age)" .chezmoi.username) "" -}}
-  {{- $email = promptStringOnce . "email" "Git email for this machine" "" -}}
-{{- end -}}
-
 encryption = "age"
 
 [age]
@@ -60,8 +31,6 @@ encryption = "age"
 
 [data]
     role = {{ $role | quote }}
-    name = {{ $name | quote }}
-    email = {{ $email | quote }}
     user = {{ .chezmoi.username | quote }}
     gaming = {{ eq $role "gaming" }}
     # The only non-gaming Linux machine today is the dev server.
