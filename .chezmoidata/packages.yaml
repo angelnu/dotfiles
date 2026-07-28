@@ -93,6 +93,7 @@ packages:
     - wezterm
     - visual-studio-code
     - brave-browser
+    - claude           # Claude Desktop; no Linux flatpak available, mac-only
 
     # --- development ---
     - postman          # API development GUI
