@@ -9,9 +9,15 @@ One repo for macOS, Bazzite (gaming) my Linux dev server.
 - **Packages**: single list in `.chezmoidata/packages.yaml` → rendered into a
   real `~/.config/homebrew/Brewfile` → applied with `brew bundle`
   (formulae + casks on macOS, formulae + Flatpaks on Bazzite)
-- **Secrets**: age-encrypted files committed to this repo; the age *private
-  key* is the only secret outside git. It's the same identity used with sops,
-  kept locally at `~/.config/sops/age/keys.txt`, pasted once at bootstrap.
+- **Secrets**: age-encrypted files committed to this repo (public); the age
+  *private key* is the only secret outside git. It's the same identity used
+  with sops, kept locally at `~/.config/sops/age/keys.txt`, pasted once at
+  bootstrap.
+- **Per-user identity**: git `name`/`email` are looked up from
+  `.chezmoisecrets/users.yaml.age`, keyed by system username — see below.
+- **Convenience**: `~/code/dotfiles` is a chezmoi-managed symlink to the
+  actual chezmoi source checkout (`code/symlink_dotfiles.tmpl`), so it's
+  reachable from the usual place alongside other projects.
 - **Commit signing**: SSH-based (`gpg.format = ssh`), via `ssh-agent` — this
   matters for signing commits made inside VS Code dev containers, which get
   the agent forwarded but not `~/.ssh`. `dot_gitconfig.tmpl` inlines the
@@ -46,11 +52,40 @@ chezmoi add --follow ~/.ssh/id_ed25519.pub             # 5. commit the public ke
 
 ## Bootstrap a machine
 
-The repo is private, so the clone step needs auth - and a genuinely fresh
-machine won't have `gh` installed yet, so don't depend on it. Pick one:
+The repo is public, so cloning needs no auth at all:
 
-**A) Pre-place the SSH key, clone over SSH directly** (simplest, if you're
-willing to paste one more key up front):
+```sh
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
+```
+
+Prompts once for `role` (default/gaming) and `prune`. OS and username are
+detected automatically, not prompted. Git `name`/`email` are looked up from
+`.chezmoisecrets/users.yaml.age` (see below) instead of being prompted, as
+long as your system username is in that dictionary.
+
+It will also ask you to paste the age private key, unless
+`~/.config/sops/age/keys.txt` already exists — e.g. because you copied it
+there yourself ahead of time. This prompt happens during `chezmoi init`'s own
+config-generation step (`.chezmoi.toml.tmpl`), *before* `apply` touches
+anything — that placement matters: chezmoi decrypts every `encrypted_` file
+(and anything else read via `include`, like the users dictionary) while
+building its target state, which happens before any `run_once_before_`
+script gets to run, so a script-based prompt can never fire in time once the
+repo has encrypted files (we hit exactly this: `chezmoi init --apply` failed
+with "no such file or directory" because the age key wasn't there yet and
+nothing had prompted for it). Doing the prompt inside `chezmoi init` itself
+sidesteps that, since `init` always fully completes - including this prompt
+and writing the key file - before `apply` starts. Never paste the key into a
+chat/LLM session; type or pipe it in locally (`pbpaste`, a password
+manager's CLI, etc.) if you're scripting this instead of typing it at the
+prompt. Once that key is in place, chezmoi decrypts everything else on its
+own — including the SSH signing key — no further pasting needed.
+
+Cloning is anonymous (read-only), so pushing changes afterward still needs
+real auth. `run_once_after_15-switch-remote-to-ssh.sh.tmpl` switches the
+source repo's remote to SSH automatically once our own SSH key has been
+decrypted onto disk. If you'd rather have push access from the very first
+clone instead of waiting for that, pre-place your SSH key and use `--ssh`:
 
 ```sh
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
@@ -59,46 +94,33 @@ chmod 600 ~/.ssh/id_ed25519
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --ssh --apply angelnu/dotfiles
 ```
 
-**B) Browser download, local init, switch to SSH after** (no key pasting
-beyond the age key, no `gh` needed - just github.com in a normal logged-in
-browser tab, which already handles 2FA at login):
-
-1. On github.com, open the repo → Code → Download ZIP.
-2. Extract it straight into chezmoi's default source location:
-   ```sh
-   unzip ~/Downloads/dotfiles-master.zip -d ~/.local/share/
-   mv ~/.local/share/dotfiles-master ~/.local/share/chezmoi
-   ```
-3. `chezmoi init --apply` (no repo argument needed - it uses the source
-   already in place).
-
-Either way, once our SSH key has been decrypted onto disk,
-`run_once_after_15-switch-remote-to-ssh.sh.tmpl` takes care of git: for (A)
-it's already a real SSH clone, nothing to do; for (B) there's no `.git` at
-all yet (a ZIP download doesn't include it), so the script runs `git init`,
-adds `origin` over SSH, fetches, and checks out the default branch - turning
-it into a real tracked clone so `chezmoi update` works normally from then on.
-
-Prompts once for `role` (default/gaming), git email, and `prune`. OS and
-username are detected automatically, not prompted. It will also ask you to
-paste the age private key, unless `~/.config/sops/age/keys.txt` already
-exists — e.g. because you copied it there yourself ahead of time. This prompt
-happens during `chezmoi init`'s own config-generation step (`.chezmoi.toml.tmpl`),
-*before* `apply` touches anything — that placement matters: chezmoi decrypts
-every `encrypted_` file while building its target state, which happens before
-any `run_once_before_` script gets to run, so a script-based prompt can never
-fire in time once the repo has encrypted files (we hit exactly this: `chezmoi
-init --apply` failed with "no such file or directory" because the age key
-wasn't there yet and nothing had prompted for it). Doing the prompt inside
-`chezmoi init` itself sidesteps that, since `init` always fully completes -
-including this prompt and writing the key file - before `apply` starts.
-Never paste the key into a chat/LLM session; type or pipe it in locally
-(`pbpaste`, a password manager's CLI, etc.) if you're scripting this instead
-of typing it at the prompt. Once that key is in place, chezmoi decrypts
-everything else on its own — including the SSH signing key — no further
-pasting needed.
-
 Answers land in `~/.config/chezmoi/chezmoi.toml`.
+
+## Per-user identity
+
+`.chezmoisecrets/users.yaml.age` is an age-encrypted dictionary, keyed by
+system username:
+
+```yaml
+users:
+  angel:
+    name: "Angel Nunez Mencias"
+    email: "git@angelnu.com"
+```
+
+`.chezmoi.toml.tmpl` decrypts and looks itself up by `.chezmoi.username`,
+falling back to prompting if the username isn't found. To add a user, decrypt
+the file (`age -d -i ~/.config/sops/age/keys.txt .chezmoisecrets/users.yaml.age`),
+edit it, and re-encrypt it to the same recipient
+(`age -r age19zycawkart4t4l7a238w0n2w0rmw6anjadwv9yr3ce3js4dz3dcqqgkvsw ...`).
+
+This deliberately lives outside `.chezmoidata/`, not inside it: chezmoi
+eagerly parses *every* file under `.chezmoidata/` as one of its known data
+formats (yaml/json/toml/...) on every command, not just `init` - an
+unrecognized extension like `.age` there is a hard error on every future
+`apply`/`diff`/`update`, confirmed by testing it directly. A sibling
+`.chezmoisecrets/` directory isn't special to chezmoi, so it's left alone and
+only ever read explicitly, via `include`, from `.chezmoi.toml.tmpl`.
 
 ---
 
