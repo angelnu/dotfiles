@@ -46,18 +46,44 @@ chezmoi add --follow ~/.ssh/id_ed25519.pub             # 5. commit the public ke
 
 ## Bootstrap a machine
 
+The repo is private, so the clone step needs auth. Either:
+
 ```sh
+gh auth login --web          # once per machine that has gh; browser/2FA, no PAT needed
+gh auth setup-git             # registers gh as git's credential helper for github.com
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
 ```
 
+or clone over SSH directly (needs an SSH key already registered with GitHub on
+this machine):
+
+```sh
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --ssh --apply angelnu/dotfiles
+```
+
+If you bootstrapped over HTTPS, `run_once_after_15-switch-remote-to-ssh.sh.tmpl`
+flips `~/.local/share/chezmoi`'s remote to SSH automatically once our own SSH
+key has been decrypted and written to `~/.ssh/` — so `chezmoi update` uses SSH
+from then on, without depending on `gh`'s credential helper.
+
 Prompts once for `role` (default/gaming), git email, and `prune`. OS and
-username are detected automatically, not prompted. It will also pause to ask
-you to paste the age private key (Ctrl-D to finish), unless
-`~/.config/sops/age/keys.txt` already exists — e.g. because you copied it
-there yourself ahead of time. Never paste it into a chat/LLM session; type or
-pipe it in locally (`pbpaste`, a password manager's CLI, etc.). Once that key
-is in place, chezmoi decrypts everything else on its own — including the SSH
-signing key — no further pasting needed.
+username are detected automatically, not prompted. It will also ask you to
+paste the age private key, unless `~/.config/sops/age/keys.txt` already
+exists — e.g. because you copied it there yourself ahead of time. This prompt
+happens during `chezmoi init`'s own config-generation step (`.chezmoi.toml.tmpl`),
+*before* `apply` touches anything — that placement matters: chezmoi decrypts
+every `encrypted_` file while building its target state, which happens before
+any `run_once_before_` script gets to run, so a script-based prompt can never
+fire in time once the repo has encrypted files (we hit exactly this: `chezmoi
+init --apply` failed with "no such file or directory" because the age key
+wasn't there yet and nothing had prompted for it). Doing the prompt inside
+`chezmoi init` itself sidesteps that, since `init` always fully completes -
+including this prompt and writing the key file - before `apply` starts.
+Never paste the key into a chat/LLM session; type or pipe it in locally
+(`pbpaste`, a password manager's CLI, etc.) if you're scripting this instead
+of typing it at the prompt. Once that key is in place, chezmoi decrypts
+everything else on its own — including the SSH signing key — no further
+pasting needed.
 
 Answers land in `~/.config/chezmoi/chezmoi.toml`.
 

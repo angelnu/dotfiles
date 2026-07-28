@@ -5,12 +5,28 @@
 
 {{- $prune := promptBoolOnce . "prune" "Remove packages/files not declared in the repo (prune)" true -}}
 
+{{/*
+  The age identity must exist BEFORE chezmoi decrypts any encrypted_ files,
+  which it does while building its target state during `apply` - before any
+  run_once_before_ script gets a chance to run. So this has to happen here,
+  during `init`, which always fully completes first (even inside a combined
+  `init --apply`). Plain promptString (not …Once) so the raw key is never
+  written into chezmoi.toml's [data] - it only exists transiently in this
+  template's execution and in the identity file itself.
+*/}}
+{{- $ageKeyPath := joinPath .chezmoi.homeDir ".config" "sops" "age" "keys.txt" -}}
+{{- if not (stat $ageKeyPath) -}}
+  {{- $ageKey := promptString "Age private key (same identity used with sops; AGE-SECRET-KEY-1...; leave blank if you'll place the file yourself)" "" -}}
+  {{- if $ageKey -}}
+    {{- $ignored := exec "sh" "-c" "mkdir -p \"$(dirname \"$1\")\" && umask 077 && printf '%s\n' \"$2\" > \"$1\" && chmod 600 \"$1\"" "sh" $ageKeyPath $ageKey -}}
+  {{- end -}}
+{{- end -}}
+
 encryption = "age"
 
 [age]
-    # Private key: same identity used with sops. Pasted at bootstrap by
-    # run_once_before_00-age-key.sh, or drop the file at this path yourself
-    # before running chezmoi init.
+    # Private key: same identity used with sops. Prompted for above, during
+    # `chezmoi init`, or drop the file at this path yourself beforehand.
     identity = "{{ .chezmoi.homeDir }}/.config/sops/age/keys.txt"
     # Public key: safe to commit.
     recipient = "age19zycawkart4t4l7a238w0n2w0rmw6anjadwv9yr3ce3js4dz3dcqqgkvsw"
