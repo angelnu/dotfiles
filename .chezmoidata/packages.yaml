@@ -1,7 +1,8 @@
 packages:
   taps:
     - fluxcd/tap      # needed for fluxcd/tap/flux below
-    - hashicorp/tap   # needed for hashicorp/tap/vault below
+    - hashicorp/tap   # needed for hashicorp/tap/vault and .../terraform below
+    - angelnu/pinned  # needed for angelnu/pinned/juju below - version-pinned formulae
 
   brews:
     common:
@@ -58,7 +59,9 @@ packages:
       - openjdk          # was "jdk" in nix
 
       # --- cloud ---
-      - juju
+      - angelnu/pinned/juju  # pinned at 3.6.7: homebrew-core moved to 4.x,
+                             # which isn't wire-compatible with older Juju
+                             # controllers. See angelnu/homebrew-pinned.
       - ansible
       - openstackclient  # was "openstackclient-full" in nix
 
