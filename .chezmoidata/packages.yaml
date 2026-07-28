@@ -87,6 +87,7 @@ packages:
     # --- dotfiles baseline (not from the old nix config) ---
     - wezterm
     - visual-studio-code
+    - brave-browser
 
     # --- development ---
     - postman          # API development GUI
