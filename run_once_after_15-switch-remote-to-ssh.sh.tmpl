@@ -1,20 +1,43 @@
 #!/bin/bash
-# If this repo was cloned over HTTPS (e.g. via gh's browser/2FA login), switch
-# the remote to SSH now that our SSH key is in place - `chezmoi update` will
-# then sync over SSH from here on, without needing gh's credential helper.
+# Ensures the chezmoi source dir ends up as a real SSH-tracked git clone of
+# angelnu/dotfiles, regardless of how it got here:
+#   - a real git clone over HTTPS (e.g. via gh's browser/2FA login) -> just
+#     switch the remote
+#   - a browser "Download ZIP" extracted straight into place - `chezmoi init`
+#     with no repo argument already ran a bare `git init` here itself (per
+#     its own documented behavior), but there's no `origin` remote at all
+#     -> add one over SSH, fetch, and check out the default branch
+# Runs once our own SSH key is in place, so `chezmoi update` can use it from
+# here on without depending on gh or an HTTPS credential helper.
 set -euo pipefail
 
-cd "{{ .chezmoi.sourceDir }}"
+SRC="{{ .chezmoi.sourceDir }}"
+SSH_URL="git@github.com:angelnu/dotfiles.git"
+cd "$SRC"
 
 if [ ! -f "{{ .chezmoi.homeDir }}/.ssh/id_ed25519" ]; then
-    echo "==> SSH key not present yet, leaving git remote as-is" >&2
+    echo "==> SSH key not present yet, leaving repo as-is" >&2
     exit 0
 fi
 
-CURRENT_URL="$(git remote get-url origin)"
+# Empty, not missing, if there's no 'origin' remote (covers both a fresh
+# `git init` with nothing added, and no .git directory at all).
+CURRENT_URL="$(git remote get-url origin 2>/dev/null || true)"
+
+if [ -z "$CURRENT_URL" ]; then
+    echo "==> no 'origin' remote (likely a browser ZIP download) - wiring up $SRC as a real clone"
+    git init -q
+    git remote add origin "$SSH_URL"
+    git fetch origin
+    DEFAULT_BRANCH="$(git remote show origin | awk '/HEAD branch/ {print $NF}')"
+    git checkout -f -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+    git branch --set-upstream-to="origin/$DEFAULT_BRANCH" "$DEFAULT_BRANCH"
+    echo "==> $SRC is now a real clone of $SSH_URL"
+    exit 0
+fi
+
 case "$CURRENT_URL" in
     https://github.com/*)
-        SSH_URL="git@github.com:${CURRENT_URL#https://github.com/}"
         git remote set-url origin "$SSH_URL"
         echo "==> switched dotfiles remote to $SSH_URL"
         ;;

@@ -46,25 +46,38 @@ chezmoi add --follow ~/.ssh/id_ed25519.pub             # 5. commit the public ke
 
 ## Bootstrap a machine
 
-The repo is private, so the clone step needs auth. Either:
+The repo is private, so the clone step needs auth - and a genuinely fresh
+machine won't have `gh` installed yet, so don't depend on it. Pick one:
+
+**A) Pre-place the SSH key, clone over SSH directly** (simplest, if you're
+willing to paste one more key up front):
 
 ```sh
-gh auth login --web          # once per machine that has gh; browser/2FA, no PAT needed
-gh auth setup-git             # registers gh as git's credential helper for github.com
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
-```
-
-or clone over SSH directly (needs an SSH key already registered with GitHub on
-this machine):
-
-```sh
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+cat > ~/.ssh/id_ed25519   # paste the private key, then Ctrl-D - never into a chat/LLM session
+chmod 600 ~/.ssh/id_ed25519
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --ssh --apply angelnu/dotfiles
 ```
 
-If you bootstrapped over HTTPS, `run_once_after_15-switch-remote-to-ssh.sh.tmpl`
-flips `~/.local/share/chezmoi`'s remote to SSH automatically once our own SSH
-key has been decrypted and written to `~/.ssh/` — so `chezmoi update` uses SSH
-from then on, without depending on `gh`'s credential helper.
+**B) Browser download, local init, switch to SSH after** (no key pasting
+beyond the age key, no `gh` needed - just github.com in a normal logged-in
+browser tab, which already handles 2FA at login):
+
+1. On github.com, open the repo → Code → Download ZIP.
+2. Extract it straight into chezmoi's default source location:
+   ```sh
+   unzip ~/Downloads/dotfiles-master.zip -d ~/.local/share/
+   mv ~/.local/share/dotfiles-master ~/.local/share/chezmoi
+   ```
+3. `chezmoi init --apply` (no repo argument needed - it uses the source
+   already in place).
+
+Either way, once our SSH key has been decrypted onto disk,
+`run_once_after_15-switch-remote-to-ssh.sh.tmpl` takes care of git: for (A)
+it's already a real SSH clone, nothing to do; for (B) there's no `.git` at
+all yet (a ZIP download doesn't include it), so the script runs `git init`,
+adds `origin` over SSH, fetches, and checks out the default branch - turning
+it into a real tracked clone so `chezmoi update` works normally from then on.
 
 Prompts once for `role` (default/gaming), git email, and `prune`. OS and
 username are detected automatically, not prompted. It will also ask you to
