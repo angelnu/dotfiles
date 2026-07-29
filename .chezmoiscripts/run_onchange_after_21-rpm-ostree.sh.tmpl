@@ -1,0 +1,58 @@
+{{ if and (eq .chezmoi.os "linux") (stat "/run/ostree-booted") -}}
+#!/bin/bash
+# Converges rpm-ostree layered packages to exactly what packages.yaml (plus
+# this user's packages-<username>.yaml overlay) declares. Only runs on
+# rpm-ostree hosts (Fedora Atomic / Bazzite) - the template guard above
+# renders this file empty everywhere else. Re-runs whenever either file
+# changes.
+# rpm_ostree packages hash: {{ (dict "common" .packages.rpm_ostree "user" (index . (printf "per_user_%s" .chezmoi.username))) | toJson | sha256sum }}
+set -euo pipefail
+
+for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/bin/brew; do
+    if [ -x "$b" ]; then eval "$("$b" shellenv)"; break; fi
+done
+
+{{- $user := index . (printf "per_user_%s" .chezmoi.username) }}
+{{- $userRpmOstree := list }}
+{{- if and $user $user.rpm_ostree }}{{ $userRpmOstree = $user.rpm_ostree }}{{ end }}
+DECLARED=({{ range (concat .packages.rpm_ostree $userRpmOstree) }}{{ . | quote }} {{ end }})
+mapfile -t CURRENT < <(rpm-ostree status --json | jq -r '.deployments[0]["requested-packages"][]?')
+
+TO_INSTALL=()
+for pkg in "${DECLARED[@]+"${DECLARED[@]}"}"; do
+    printf '%s\n' "${CURRENT[@]+"${CURRENT[@]}"}" | grep -qx "$pkg" || TO_INSTALL+=("$pkg")
+done
+
+TO_REMOVE=()
+for pkg in "${CURRENT[@]+"${CURRENT[@]}"}"; do
+    printf '%s\n' "${DECLARED[@]+"${DECLARED[@]}"}" | grep -qx "$pkg" || TO_REMOVE+=("$pkg")
+done
+
+CHANGED=0
+
+if [ "${#TO_INSTALL[@]}" -gt 0 ]; then
+    echo "==> Layering: ${TO_INSTALL[*]}"
+    sudo rpm-ostree install --idempotent --allow-inactive "${TO_INSTALL[@]}"
+    CHANGED=1
+fi
+
+if [ "${#TO_REMOVE[@]}" -gt 0 ]; then
+    echo "==> Packages that would be un-layered: ${TO_REMOVE[*]}"
+    if [ "${RPM_OSTREE_PRUNE_CONFIRM:-ask}" = "yes" ]; then
+        sudo rpm-ostree uninstall "${TO_REMOVE[@]}"
+        CHANGED=1
+    else
+        read -r -p "Proceed with uninstall? [y/N] " reply </dev/tty || reply=n
+        case "$reply" in
+            [yY]*) sudo rpm-ostree uninstall "${TO_REMOVE[@]}"; CHANGED=1 ;;
+            *)     echo "==> Skipped uninstall. Run manually when ready." ;;
+        esac
+    fi
+fi
+
+if [ "$CHANGED" -eq 1 ]; then
+    echo "==> rpm-ostree changes staged - reboot to apply (systemctl reboot)"
+else
+    echo "==> Nothing to change"
+fi
+{{ end -}}

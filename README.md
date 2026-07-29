@@ -5,7 +5,8 @@ One repo for macOS and Linux machines (e.g. the dev server).
 - **Dotfiles/config**: chezmoi templates, branched on OS (`.chezmoi.os`,
   detected automatically — no need to say "mac"), machine `role`
   (`default` / `server`), and `user` (`.chezmoi.username`, detected
-  automatically, for future per-user config)
+  automatically) - the same repo serves multiple people, each with their own
+  age/SSH identity and package overlay, see "Per-user identity" below
 - **macOS Application Support**: `~/Library/Application Support/{fish,
   homebrew,sops}` are symlinked to their real locations under `~/.config`
   (`.chezmoiscripts/run_once_after_45-macos-appsupport-symlinks.sh.tmpl`),
@@ -34,50 +35,62 @@ One repo for macOS and Linux machines (e.g. the dev server).
   directories first (refuses to finish for the affected one - leaves it
   as-is - if something with the same name already exists under `~/.config`,
   rather than risk clobbering it; the others still complete independently).
-- **Packages**: single list in `.chezmoidata/packages.yaml` → rendered into a
-  real `~/.config/homebrew/Brewfile` → applied with `brew bundle`
-  (formulae + casks on macOS, formulae + Flatpaks on non-server Linux)
-- **Secrets**: age-encrypted files committed to this repo (public); the age
-  *private key* is the only secret outside git. It's the same identity used
-  with sops, kept locally at `~/.config/sops/age/keys.txt`, pasted once at
-  bootstrap.
-- **Per-user identity**: git `name`/`email` are looked up from
-  `.chezmoisecrets/users.yaml.age`, keyed by system username, directly in
-  `dot_gitconfig.tmpl` (the only place they're needed) — see below.
+- **Packages**: common list in `.chezmoidata/packages.yaml`, plus an optional
+  per-user overlay in `.chezmoidata/packages-<username>.yaml` → both merged
+  and rendered into a real `~/.config/homebrew/Brewfile` → applied with
+  `brew bundle` (formulae + casks on macOS, formulae + Flatpaks on
+  non-server Linux; rpm-ostree layered packages on Fedora Atomic hosts go
+  through a separate script, see below)
+- **Secrets**: age-encrypted files committed to this repo (public); each
+  person's age *private key* is the only secret outside git, never shared
+  between people. Kept locally at `~/.config/sops/age/keys.txt` (same
+  identity used with sops), pasted once at bootstrap.
+- **Per-user identity**: git `name`/`email`, the age encryption recipient,
+  and the personal SSH signing key are all looked up per system username -
+  see "Per-user identity" below.
 - **Convenience**: `~/code/dotfiles` is a chezmoi-managed symlink to the
   actual chezmoi source checkout (`code/symlink_dotfiles.tmpl`), so it's
   reachable from the usual place alongside other projects.
 - **Commit signing**: SSH-based (`gpg.format = ssh`), via `ssh-agent` — this
   matters for signing commits made inside VS Code dev containers, which get
-  the agent forwarded but not `~/.ssh`. `dot_gitconfig.tmpl` inlines the
-  literal public key into `user.signingKey` at render time (via chezmoi's
-  `include`, reading `private_dot_ssh/private_readonly_id_ed25519.pub`)
-  rather than pointing at a file path, so it keeps working wherever
-  `.gitconfig` ends up even without `~/.ssh` present. That `.pub` file is
-  still the single source of truth — it's also written to `~/.ssh/` on
-  `chezmoi apply` for everything else that expects it there. Both halves of
-  the keypair live in the repo under `private_dot_ssh/` — the public key in
-  plaintext, the private key age-encrypted
-  (`encrypted_private_readonly_id_ed25519.age`) — and are written to
-  `~/.ssh/` automatically on `chezmoi apply`. Nothing to paste for the SSH
-  key at all.
+  the agent forwarded but not `~/.ssh`. `dot_gitconfig.tmpl` derives
+  `user.signingKey` directly from the current user's own encrypted private
+  key at render time (decrypt, then `ssh-keygen -y` on it) rather than
+  reading a `.pub` file or pointing at a file path, so it keeps working
+  wherever `.gitconfig` ends up even without `~/.ssh` present, and stays
+  correct per-person. The private key itself lives per-user under
+  `.chezmoisecrets/ssh/<username>/id_ed25519.age` and is written to
+  `~/.ssh/id_ed25519` automatically on `chezmoi apply`; the matching
+  `~/.ssh/id_ed25519.pub` is derived from that file by a `run_after_` script
+  (plain `ssh-keygen -y`, same as doing it by hand) rather than stored
+  anywhere. Nothing to paste for the SSH key at all, beyond the one-time
+  registration described in "Per-user identity" below.
 
 ## One-time setup
 
 ```sh
 age-keygen -o keys.txt                # 1. generate keypair (or reuse an
                                        #    existing sops age identity)
-# 2. put the PUBLIC key into .chezmoi.toml.tmpl (recipient = "age1...")
+# 2. add yourself to .chezmoidata/identities.yaml:
+#      identities:
+#        yourusername:
+#          age_recipient: age1...      # the PUBLIC key from step 1
 # 3. keep keys.txt somewhere you control (password manager entry, offline
 #    backup, etc.) so you can paste it on future machines
 
-chezmoi add --encrypt --follow ~/.ssh/id_ed25519       # 4. commit the private
-                                                        #    signing key, encrypted
-chezmoi add --follow ~/.ssh/id_ed25519.pub             # 5. commit the public key
-                                                        #    in plaintext (not secret)
-# dot_gitconfig.tmpl already points user.signingKey at ~/.ssh/id_ed25519.pub,
-# so no further edits needed there.
+scripts/edit-ssh-secret.sh yourusername   # 4. paste your existing SSH private
+                                           #    key in the editor that opens;
+                                           #    encrypts it to your own
+                                           #    recipient only, in
+                                           #    .chezmoisecrets/ssh/yourusername/
+scripts/edit-users-secret.sh              # 5. add your name/email; re-encrypts
+                                           #    to everyone currently in
+                                           #    identities.yaml
 ```
+
+Commit and push both files when done. `dot_gitconfig.tmpl` and the SSH
+templates already look themselves up by username - no further edits needed
+there.
 
 ## Bootstrap a machine
 
@@ -89,9 +102,12 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
 
 Prompts once for `role` (default/server). OS and username are detected
 automatically, not prompted - and git `name`/`email` aren't prompted for at
-all, see "Per-user identity" below. Pruning (removing anything not declared
-in `packages.yaml`) always runs; see "Packages" below to disable it per-run
-or per-machine.
+all, see "Per-user identity" below. Your username must already have an entry
+in `.chezmoidata/identities.yaml` before running this - `init` fails fast
+with a clear message otherwise, rather than producing a config with no
+encryption recipient. Pruning (removing anything not declared in
+`packages.yaml`) always runs; see "Packages" below to disable it per-run or
+per-machine.
 
 It will also ask you to paste the age private key, unless
 `~/.config/sops/age/keys.txt` already exists — e.g. because you copied it
@@ -136,8 +152,33 @@ Answers land in `~/.config/chezmoi/chezmoi.toml`.
 
 ## Per-user identity
 
-`.chezmoisecrets/users.yaml.age` is an age-encrypted dictionary, keyed by
-system username:
+This repo serves multiple people (each on their own macOS/Linux machines),
+not just one. Three things are keyed by `.chezmoi.username`:
+
+### Age encryption recipient
+
+`.chezmoidata/identities.yaml` is a **plaintext** map of username → age
+public key:
+
+```yaml
+identities:
+  someusername:
+    age_recipient: age1...
+```
+
+Plaintext deliberately - `.chezmoi.toml.tmpl` needs this to set `[age]
+recipient` while it's *generating* the very config that chezmoi's `decrypt`
+function depends on, so `decrypt` isn't available to it yet (confirmed the
+hard way - see "Bootstrap a machine"). If your username has no entry here,
+`chezmoi init` fails immediately with a clear message rather than silently
+producing a config with no recipient. Each person's own age *private* key
+never appears in this repo at all - only ever locally, at
+`~/.config/sops/age/keys.txt`.
+
+### Name/email (git)
+
+`.chezmoisecrets/users.yaml.age` is an age-encrypted dictionary, keyed the
+same way:
 
 ```yaml
 users:
@@ -146,25 +187,72 @@ users:
     email: "someuser@example.com"
 ```
 
-`dot_gitconfig.tmpl` decrypts it and looks itself up by `.chezmoi.username`
-when rendering `~/.gitconfig` - the only place `name`/`email` are actually
-needed. If the username isn't found, `user.name`/`user.email` are just left
-blank rather than failing the whole `apply`/`update` run (this file can
-render unattended, via the daily auto-update timer, so it can't prompt).
+Encrypted to **every** recipient in `identities.yaml` (not just one), since
+`dot_gitconfig.tmpl` decrypts it for whoever is applying. `dot_gitconfig.tmpl`
+looks itself up by `.chezmoi.username` when rendering `~/.gitconfig` - the
+only place `name`/`email` are actually needed. If the username isn't found,
+`user.name`/`user.email` are just left blank rather than failing the whole
+`apply`/`update` run (this file can render unattended, via the daily
+auto-update timer, so it can't prompt).
 
-To add a user, run `scripts/edit-users-secret.sh` - decrypts it to a temp
-file, opens VS Code, waits for you to close the tab, re-encrypts it back in
-place, and cleans up the temp file either way. Not chezmoi-managed
-(`scripts/**` in `.chezmoiignore`), so it's just there to run directly from
-the checkout, not applied anywhere.
+To add/edit a user, run `scripts/edit-users-secret.sh` - decrypts it to a
+temp file, opens VS Code, waits for you to close the tab, re-encrypts it back
+in place (to every current recipient), and cleans up the temp file either
+way. Not chezmoi-managed (`scripts/**` in `.chezmoiignore`), so it's just
+there to run directly from the checkout, not applied anywhere.
 
-This deliberately lives outside `.chezmoidata/`, not inside it: chezmoi
-eagerly parses *every* file under `.chezmoidata/` as one of its known data
-formats (yaml/json/toml/...) on every command, not just `init` - an
-unrecognized extension like `.age` there is a hard error on every future
-`apply`/`diff`/`update`, confirmed by testing it directly. A sibling
-`.chezmoisecrets/` directory isn't special to chezmoi, so it's left alone and
-only ever read explicitly, via `include`.
+### Personal SSH key
+
+`.chezmoisecrets/ssh/<username>/id_ed25519.age` holds each person's personal
+key (used for git commit signing, GitHub, etc.), encrypted **only** to that
+one person's own recipient - unlike `users.yaml.age`, this is never
+multi-recipient, so nobody can decrypt anyone else's. `private_dot_ssh/
+private_readonly_id_ed25519.tmpl` picks the current user's file by username
+and writes it to `~/.ssh/id_ed25519`; a `run_after_` script derives
+`~/.ssh/id_ed25519.pub` from it (plain `ssh-keygen -y`) on every apply, and
+`dot_gitconfig.tmpl`'s `signingKey` derives it the same way independently
+(the `.pub` file doesn't exist yet at template-render time on a first apply -
+see the comment in that file).
+
+To add/rotate your own key, run `scripts/edit-ssh-secret.sh <username>` -
+same decrypt/edit/re-encrypt flow as above, but single-recipient and
+per-user: decrypting an *existing* file only works if you're running it as
+that username's own identity, so in practice each person can only ever
+rotate their own key, never someone else's.
+
+A couple of SSH keys (`id_rsa`, `ansible_rsa` - infra-automation access) stay
+Angel-only regardless of who else is registered: gated out entirely for any
+other username via a conditional block in `.chezmoiignore`, rather than
+becoming multi-recipient like the personal key above.
+
+### Package overlay
+
+`.chezmoidata/packages-<username>.yaml`, one file per person, each under a
+uniquely-named top-level key so multiple files merge without collisions
+(chezmoi merges every file under `.chezmoidata/` into one data tree):
+
+```yaml
+per_user_someusername:
+  brews: []
+  casks: []
+  flatpaks: []
+  rpm_ostree: []
+```
+
+Merged on top of the common lists in `packages.yaml` when rendering the
+Brewfile and the rpm-ostree script - see "Packages" below.
+
+### Why some of this lives outside `.chezmoidata/`
+
+`.chezmoisecrets/` (both `users.yaml.age` and `ssh/`) deliberately isn't
+under `.chezmoidata/`: chezmoi eagerly parses *every* file there as one of
+its known data formats (yaml/json/toml/...) on every command, not just
+`init` - an unrecognized extension like `.age` there is a hard error on
+every future `apply`/`diff`/`update`, confirmed by testing it directly. A
+sibling `.chezmoisecrets/` directory isn't special to chezmoi, so it's left
+alone and only ever read explicitly, via `include`. `identities.yaml` is
+plain `.yaml`, so it doesn't have this problem and lives under
+`.chezmoidata/` normally.
 
 ---
 
@@ -209,20 +297,46 @@ declared in the Brewfile. Both run from
 which re-fires whenever `packages.yaml` changes. So deleting a line from
 `packages.yaml` uninstalls it fleet-wide on the next `chezmoi update`.
 
+Per-user extras (`.chezmoidata/packages-<username>.yaml`, see "Per-user
+identity" above) are merged in on top of the common lists for whoever is
+currently applying - deleting a line there only uninstalls it for that one
+person, not everyone.
+
 The cleanup phase only runs at all if there's something to remove (skipped
 silently otherwise), and prints what it would remove and asks before doing
 it. Set `BREW_PRUNE_CONFIRM=yes` for unattended runs (e.g. the daily
 auto-update timer) to skip that confirmation.
 
 Caveats:
-- Cleanup only manages what brew knows about. Things installed via `dnf`,
-  `rpm-ostree`, or by hand are untouched.
+- Cleanup only manages what brew knows about. Things installed by hand are
+  untouched.
 - Non-formula types are opt-in via flags (`--flatpaks` etc.). Confirm the exact
   flag names with `brew bundle cleanup --help` on your version.
 - There is a known bug where cleanup's autoremove pass can cascade into
   dependencies of packages you *did* declare. Read the dry-run output the first
   few times rather than reflexively confirming.
 - Casks are uninstalled, not zapped; add `--zap` if you want config removed too.
+
+#### rpm-ostree (Fedora Atomic / Bazzite)
+
+`packages.rpm_ostree` (plus each person's `per_user_<username>.rpm_ostree`
+overlay) declares packages to layer with `rpm-ostree install` on atomic hosts
+- things brew/flatpak can't provide, e.g. `nextcloud-client-dolphin` for real
+file-manager overlay-icon integration (a flatpak's sandbox can't hook into
+Dolphin the same way). Converged by
+`.chezmoiscripts/run_onchange_after_21-rpm-ostree.sh.tmpl`, which:
+
+- Renders to an empty no-op file on any host where `/run/ostree-booted` doesn't
+  exist (i.e. everywhere except rpm-ostree hosts) - safe to leave declared
+  packages in `packages.yaml` even if only some machines are atomic.
+- Diffs `packages.rpm_ostree` against `rpm-ostree status`'s requested-package
+  list, `rpm-ostree install`s anything missing, and offers to
+  `rpm-ostree uninstall` anything no longer declared (same ask-first pattern as
+  brew cleanup; set `RPM_OSTREE_PRUNE_CONFIRM=yes` for unattended runs).
+- **Never reboots automatically.** Layered changes only take effect after a
+  reboot - the script just reminds you; running it unattended (e.g. the daily
+  timer) leaves the host in a "changes pending" state until you reboot it
+  yourself.
 
 ### What is *not* covered
 
@@ -246,7 +360,11 @@ chezmoi apply --dry-run --verbose   # preview, including removals
 ## Adding an encrypted secret
 
 ```sh
-chezmoi add --encrypt ~/.ssh/id_ed25519
+chezmoi add --encrypt ~/.ssh/ansible_rsa
 ```
 
 Creates `encrypted_*.age` in the source dir — commit it like any other file.
+Encrypts to *your own* recipient (`.chezmoidata/identities.yaml`), so this is
+right for secrets that are yours alone. For the personal SSH key
+(`id_ed25519`) specifically, use `scripts/edit-ssh-secret.sh` instead - see
+"Per-user identity" above.

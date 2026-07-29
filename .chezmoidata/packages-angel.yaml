@@ -1,0 +1,12 @@
+# Packages that apply only to angel, on top of the common lists in
+# packages.yaml. Empty for now - everything he needs is already common.
+per_user_angel:
+  brews:
+      # --- cloud ---
+      - angelnu/pinned/juju  # pinned at 3.6.7: homebrew-core moved to 4.x,
+                             # which isn't wire-compatible with older Juju
+                             # controllers. See angelnu/homebrew-pinned.
+      - openstackclient  # was "openstackclient-full" in nix
+  casks: []
+  flatpaks: []
+  rpm_ostree: []

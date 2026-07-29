@@ -61,11 +61,7 @@ packages:
       - openjdk          # was "jdk" in nix
 
       # --- cloud ---
-      - angelnu/pinned/juju  # pinned at 3.6.7: homebrew-core moved to 4.x,
-                             # which isn't wire-compatible with older Juju
-                             # controllers. See angelnu/homebrew-pinned.
       - ansible
-      - openstackclient  # was "openstackclient-full" in nix
 
       # --- Others ---
       - dos2unix         # convert DOS line endings to Unix
@@ -110,6 +106,11 @@ packages:
     - openscad          # programmable 3D CAD
     - dosbox-x-app       # DOS emulator
     - wireshark-app       # network protocol analyzer
+    - bitwarden          # password manager
+    - nextcloud          # Nextcloud desktop sync client
+    - signal              # private messenger
+    - whatsapp            # official desktop client (mac-only; no official Linux
+                           # client exists, see ZapZap flatpak below)
 
   flatpaks:   # Linux GUI apps (system-wide, from flathub)
     common: []            # installed on every Linux machine, regardless of role
@@ -129,3 +130,18 @@ packages:
       - org.openscad.OpenSCAD
       - com.dosbox_x.DOSBox-X
       - org.wireshark.Wireshark
+      - com.bitwarden.desktop
+      - org.signal.Signal
+      - com.rtosta.zapzap  # ZapZap; unofficial WhatsApp Web wrapper - WhatsApp
+                           # has no official Linux client
+      # nextcloud-client intentionally NOT here: the flatpak
+      # (com.nextcloud.desktopclient.nextcloud) doesn't integrate with Dolphin's
+      # overlay icons. Layered instead via packages.rpm_ostree below, on hosts
+      # that support it.
+
+  rpm_ostree:   # layered packages for rpm-ostree hosts (Fedora Atomic / Bazzite);
+                # ignored on non-rpm-ostree hosts. See
+                # .chezmoiscripts/run_onchange_after_21-rpm-ostree.sh.tmpl
+    - nextcloud-client
+    - nextcloud-client-dolphin  # real Dolphin overlay-icon integration; the
+                                # flatpak can't provide this (sandboxed)

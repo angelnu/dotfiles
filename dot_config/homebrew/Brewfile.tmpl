@@ -2,24 +2,42 @@
 {{- range .packages.taps }}
 tap "{{ . }}"
 {{ end -}}
+{{- /*
+  Per-user extras live in their own file, .chezmoidata/packages-<username>.yaml,
+  each under a uniquely-named top-level key (per_user_<username>) so multiple
+  files merge without collisions. Missing entirely (unregistered username, or
+  no extras) is fine - degrades to empty lists.
+*/ -}}
+{{- $user := index . (printf "per_user_%s" .chezmoi.username) }}
+{{- $userBrews := list }}
+{{- $userCasks := list }}
+{{- $userFlatpaks := list }}
+{{- if $user }}
+  {{- if $user.brews }}{{ $userBrews = $user.brews }}{{ end }}
+  {{- if $user.casks }}{{ $userCasks = $user.casks }}{{ end }}
+  {{- if $user.flatpaks }}{{ $userFlatpaks = $user.flatpaks }}{{ end }}
+{{- end }}
 {{- $brews := .packages.brews.common }}
 {{- $osBrews := index .packages.brews .chezmoi.os }}
 {{- if $osBrews }}{{ $brews = concat $brews $osBrews }}{{ end }}
+{{- if $userBrews }}{{ $brews = concat $brews $userBrews }}{{ end }}
 {{ range $brews -}}
 brew "{{ . }}"
 {{ end -}}
 {{- if eq .chezmoi.os "darwin" }}
-{{ range .packages.casks -}}
+{{- $casks := .packages.casks }}
+{{- if $userCasks }}{{ $casks = concat $casks $userCasks }}{{ end }}
+{{ range $casks -}}
 cask "{{ . }}"
 {{ end -}}
 {{- end }}
 {{- if eq .chezmoi.os "linux" }}
-{{ range .packages.flatpaks.common -}}
-flatpak "{{ . }}"
-{{ end -}}
+{{- $flatpaks := .packages.flatpaks.common }}
 {{- if not .server }}
-{{ range .packages.flatpaks.non_server -}}
+{{- $flatpaks = concat $flatpaks .packages.flatpaks.non_server }}
+{{- end }}
+{{- if $userFlatpaks }}{{ $flatpaks = concat $flatpaks $userFlatpaks }}{{ end }}
+{{ range $flatpaks -}}
 flatpak "{{ . }}"
 {{ end -}}
-{{- end }}
 {{- end }}

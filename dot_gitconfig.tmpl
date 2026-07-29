@@ -15,13 +15,28 @@
   {{- $name = $me.name -}}
   {{- $email = $me.email -}}
 {{- end -}}
+{{- /*
+  signingKey is derived from the per-user encrypted private key (not read
+  back from ~/.ssh/id_ed25519.pub - that file doesn't exist yet at this
+  point: all target files render before any run_after_ script, including
+  the one that derives it, so reading it here would only work on the
+  *second* apply). ssh-keygen -y needs a real file, not stdin, so the
+  decrypted key is written to a private tempfile via `output`, exactly
+  the same "pass secret as a positional shell arg, not interpolated into
+  the script body" pattern .chezmoi.toml.tmpl already uses for the age key.
+*/ -}}
+{{- $signingKey := "" -}}
+{{- if index $.identities .chezmoi.username -}}
+  {{- $privKey := include (printf ".chezmoisecrets/ssh/%s/id_ed25519.age" .chezmoi.username) | decrypt -}}
+  {{- $signingKey = output "sh" "-c" "umask 077; f=$(mktemp); trap 'rm -f \"$f\"' EXIT; printf '%s' \"$1\" > \"$f\"; ssh-keygen -y -f \"$f\"" "sh" $privKey | trim -}}
+{{- end -}}
 [user]
     name = {{ $name }}
     email = {{ $email }}
     # Literal key value (not a path) so this still works inside dev
     # containers, where .gitconfig gets mounted/copied in but ~/.ssh does
     # not - signing there relies on the forwarded ssh-agent instead.
-    signingKey = "{{ include "private_dot_ssh/private_readonly_id_ed25519.pub" | trim }}"
+    signingKey = "{{ $signingKey }}"
 [init]
     defaultBranch = main
 [pull]

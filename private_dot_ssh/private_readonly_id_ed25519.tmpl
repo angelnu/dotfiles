@@ -1,0 +1,3 @@
+{{- if index .identities .chezmoi.username -}}
+{{ include (printf ".chezmoisecrets/ssh/%s/id_ed25519.age" .chezmoi.username) | decrypt }}
+{{- end -}}

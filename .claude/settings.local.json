@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chezmoi --version)",
+      "Bash(brew info *)",
+      "Bash(brew search *)",
+      "Bash(command -v flatpak)",
+      "Bash(curl -s -m 5 -o /dev/null -w \"%{http_code}\\\\n\" \"https://flathub.org/api/v2/appstream/org.videolan.VLC\")",
+      "Bash(curl -s -m 8 \"https://flathub.org/api/v2/search\" -H \"Content-Type: application/json\" -d '{\"query\":\"drawio\"}')",
+      "Bash(curl -s -m 8 \"https://flathub.org/api/v2/search\" -H \"Content-Type: application/json\" -d '{\"query\":\"dosbox-x\"}')",
+      "Bash(ls -la ~/secrets/age 2>&1)",
+      "Bash(git add *)"
+    ]
+  }
+}

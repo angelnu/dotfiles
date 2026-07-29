@@ -19,14 +19,29 @@
   {{- end -}}
 {{- end -}}
 
+{{- /*
+  Read via `include` + `fromYaml`, NOT the auto-merged `.identities` data -
+  confirmed by testing that the merge pass that exposes `.chezmoidata/*.yaml`
+  as top-level template data hasn't happened yet this early during `init`
+  (`.packages` is equally absent here, same reason). `include` reads the raw
+  source file directly regardless, so it works at this point.
+*/ -}}
+{{- $identities := (include ".chezmoidata/identities.yaml" | fromYaml).identities -}}
+{{- $identity := index $identities .chezmoi.username -}}
+{{- if not $identity -}}
+  {{ fail (printf "no entry for %q in .chezmoidata/identities.yaml - add one before running chezmoi init" .chezmoi.username) }}
+{{- end -}}
+
 encryption = "age"
 
 [age]
     # Private key: same identity used with sops. Prompted for above, during
     # `chezmoi init`, or drop the file at this path yourself beforehand.
     identity = "{{ .chezmoi.homeDir }}/.config/sops/age/keys.txt"
-    # Public key: safe to commit.
-    recipient = "age19zycawkart4t4l7a238w0n2w0rmw6anjadwv9yr3ce3js4dz3dcqqgkvsw"
+    # Public key: safe to commit. Looked up per-username from
+    # .chezmoidata/identities.yaml, so each person encrypts new secrets to
+    # their own key, not a single shared one.
+    recipient = {{ $identity.age_recipient | quote }}
 
 [data]
     role = {{ $role | quote }}

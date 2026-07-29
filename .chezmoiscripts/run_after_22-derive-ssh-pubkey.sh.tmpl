@@ -1,0 +1,19 @@
+#!/bin/bash
+# Derives ~/.ssh/id_ed25519.pub from the private key chezmoi just applied -
+# same as running `ssh-keygen -y` by hand. Runs on every apply (cheap,
+# idempotent), not onchange, so it stays correct even if the key is rotated.
+set -euo pipefail
+
+KEY="{{ .chezmoi.homeDir }}/.ssh/id_ed25519"
+
+if [ -f "$KEY" ]; then
+    # Write to a tempfile then `mv` into place: a stale .pub from before this
+    # script existed may still be on disk with the old readonly_ (chmod 444)
+    # bits chezmoi no longer resets (it's not a chezmoi target anymore) - a
+    # plain `>` redirect needs write access to the existing file and fails
+    # on that, but `mv` only needs write access to the directory.
+    TMP="$(mktemp)"
+    ssh-keygen -y -f "$KEY" > "$TMP"
+    chmod 644 "$TMP"
+    mv -f "$TMP" "$KEY.pub"
+fi
