@@ -2,8 +2,7 @@
 # packages.yaml. Shape mirrors packages.yaml exactly.
 per_user_mireille:
   brews:
-    common:
-      - mongosh
+    common: []
     darwin: []
     linux: []
   casks: []
