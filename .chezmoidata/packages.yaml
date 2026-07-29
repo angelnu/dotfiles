@@ -117,26 +117,34 @@ packages:
     common: []            # installed on every Linux machine, regardless of role
     non_server:           # installed on every Linux machine except the server
       # --- dotfiles baseline (not from the old nix config) ---
-      - org.videolan.VLC
-      - com.visualstudio.code
-      - com.brave.Browser
-      - org.mozilla.thunderbird_esr
-      - com.prusa3d.PrusaSlicer
-      - org.freecad.FreeCAD
-      - org.virt_manager.virt-manager
+      - org.videolan.VLC             # VLC media player
+      - com.visualstudio.code        # VS Code editor
+      - com.brave.Browser            # Brave browser
+      - org.mozilla.thunderbird_esr  # email client
+      - com.prusa3d.PrusaSlicer      # 3D printer slicer
+      - org.freecad.FreeCAD          # parametric 3D CAD
+      - org.virt_manager.virt-manager  # libvirt/QEMU VM manager
+      - io.github.pwr_solaar.solaar    # Logitech peripherals manager
+      - org.kde.discover               # KDE software center
+      - org.kde.filelight              # disk usage visualizer
+      - org.kde.gwenview               # image viewer
+      - org.kde.haruna                 # video player
+      - org.kde.kcalc                  # calculator
+      - org.kde.okular                 # document/PDF viewer
+      - org.onlyoffice.desktopeditors  # office suite
 
       # --- development ---
-      - com.getpostman.Postman
-      - com.jgraph.drawio.desktop
+      - com.getpostman.Postman     # API development GUI
+      - com.jgraph.drawio.desktop  # diagramming tool
 
       # --- Others ---
-      - com.slack.Slack
-      - com.discordapp.Discord
-      - org.openscad.OpenSCAD
-      - com.dosbox_x.DOSBox-X
-      - org.wireshark.Wireshark
-      - com.bitwarden.desktop
-      - org.signal.Signal
+      - com.slack.Slack        # team chat
+      - com.discordapp.Discord  # voice/chat
+      - org.openscad.OpenSCAD  # programmable 3D CAD
+      - com.dosbox_x.DOSBox-X  # DOS emulator
+      - org.wireshark.Wireshark  # network protocol analyzer
+      - com.bitwarden.desktop  # password manager
+      - org.signal.Signal      # private messenger
       - com.rtosta.zapzap  # ZapZap; unofficial WhatsApp Web wrapper - WhatsApp
                            # has no official Linux client
       # nextcloud-client intentionally NOT here: the flatpak
@@ -145,21 +153,21 @@ packages:
       # that support it.
     # --- gaming-only: merged in when role="gaming" (Bazzite), see Brewfile.tmpl ---
     gaming:
-      - app.xemu.xemu
-      - com.github.Matoking.protontricks
-      - com.supermodel3.Supermodel
-      - com.vysp3r.ProtonPlus
-      - io.github.ilya_zlobintsev.LACT
-      - io.github.shiiion.primehack
-      - io.github.wivrn.wivrn
-      - it.mq1.TinyWiiBackupManager
-      - net.davidotek.pupgui2
-      - net.kuribo64.melonDS
-      - org.DolphinEmu.dolphin-emu
-      - org.libretro.RetroArch
-      - org.mamedev.MAME
-      - org.ppsspp.PPSSPP
-      - org.scummvm.ScummVM
+      - app.xemu.xemu                        # original Xbox emulator
+      - com.github.Matoking.protontricks      # Proton prefix helper for Steam games
+      - com.supermodel3.Supermodel            # Sega Model 3 arcade emulator
+      - com.vysp3r.ProtonPlus                 # Proton/Wine compatibility tool manager
+      - io.github.ilya_zlobintsev.LACT        # Linux AMD GPU control (overclock/fan)
+      - io.github.shiiion.primehack           # Dolphin fork with VR mods (Metroid Prime)
+      - io.github.wivrn.wivrn                 # VR headset streaming server
+      - it.mq1.TinyWiiBackupManager           # Wii game backup manager
+      - net.davidotek.pupgui2                 # ProtonUp-Qt; installs Proton-GE/Wine-GE
+      - net.kuribo64.melonDS                  # Nintendo DS emulator
+      - org.DolphinEmu.dolphin-emu            # GameCube/Wii emulator
+      - org.libretro.RetroArch                # multi-system emulator frontend
+      - org.mamedev.MAME                      # arcade machine emulator
+      - org.ppsspp.PPSSPP                     # PSP emulator
+      - org.scummvm.ScummVM                   # classic point-and-click adventure engine
 
   rpm_ostree:   # layered packages for rpm-ostree hosts (Fedora Atomic / Bazzite);
                 # ignored on non-rpm-ostree hosts. See
