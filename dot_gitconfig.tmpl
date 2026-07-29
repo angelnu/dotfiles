@@ -33,11 +33,19 @@
   the nix-profile's own (incompatible) `sh`, and ssh-keygen failed with an
   opaque "error in libcrypto". Absolute path for the shell itself, plus a
   known-good PATH for what runs inside it, sidesteps whatever's ambient.
+
+  `printf '%s\n'`, not `'%s'` - matches the age-key bootstrap in
+  .chezmoi.toml.tmpl, and for the same reason: ssh-keygen -y fails with an
+  equally opaque "invalid format" if the private key file it's given
+  doesn't end in a newline. Confirmed the hard way too - a key pasted into
+  an editor from a source file that itself lacked a trailing newline hits
+  this. If $1 already ends in a newline, this just adds a second trailing
+  one - confirmed ssh-keygen -y parses that fine too, so it's safe either way.
 */ -}}
 {{- $signingKey := "" -}}
 {{- if index $.identities .chezmoi.username -}}
   {{- $privKey := include (printf ".chezmoisecrets/ssh/%s/id_ed25519.age" .chezmoi.username) | decrypt -}}
-  {{- $signingKey = output "/bin/sh" "-c" "PATH=\"/opt/homebrew/bin:/opt/homebrew/sbin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\"; umask 077; f=$(mktemp); trap 'rm -f \"$f\"' EXIT; printf '%s' \"$1\" > \"$f\"; ssh-keygen -y -f \"$f\"" "sh" $privKey | trim -}}
+  {{- $signingKey = output "/bin/sh" "-c" "PATH=\"/opt/homebrew/bin:/opt/homebrew/sbin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\"; umask 077; f=$(mktemp); trap 'rm -f \"$f\"' EXIT; printf '%s\n' \"$1\" > \"$f\"; ssh-keygen -y -f \"$f\"" "sh" $privKey | trim -}}
 {{- end -}}
 [user]
     name = {{ $name }}

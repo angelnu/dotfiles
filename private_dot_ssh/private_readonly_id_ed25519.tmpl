@@ -1,3 +1,12 @@
 {{- if index .identities .chezmoi.username -}}
-{{ include (printf ".chezmoisecrets/ssh/%s/id_ed25519.age" .chezmoi.username) | decrypt }}
+{{- /*
+  Guarantee exactly one trailing newline in the string VALUE itself (via
+  printf), not by relying on a literal newline in the template source
+  between actions - {{- trim markers strip that from the source before
+  rendering, so it was never actually reliable. ssh-keygen -y fails with
+  an opaque "invalid format" on a key file missing its trailing newline;
+  confirmed the hard way when a stored key happened to lack one.
+*/ -}}
+{{- $key := include (printf ".chezmoisecrets/ssh/%s/id_ed25519.age" .chezmoi.username) | decrypt -}}
+{{- printf "%s\n" (trimSuffix "\n" $key) -}}
 {{- end -}}
