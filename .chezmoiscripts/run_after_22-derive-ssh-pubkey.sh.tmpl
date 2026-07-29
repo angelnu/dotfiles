@@ -4,6 +4,13 @@
 # idempotent), not onchange, so it stays correct even if the key is rotated.
 set -euo pipefail
 
+# Curated PATH, not whatever this process inherited: `ssh-keygen` below is
+# resolved by bare name, and on a machine with a stale/broken profile
+# (e.g. an old ~/.nix-profile) ahead of Homebrew/system paths, that can
+# silently pick up an incompatible binary - confirmed the hard way, it
+# failed with an opaque "error in libcrypto" from a nix-shadowed ssh-keygen.
+export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
 KEY="{{ .chezmoi.homeDir }}/.ssh/id_ed25519"
 
 if [ -f "$KEY" ]; then

@@ -24,11 +24,20 @@
   decrypted key is written to a private tempfile via `output`, exactly
   the same "pass secret as a positional shell arg, not interpolated into
   the script body" pattern .chezmoi.toml.tmpl already uses for the age key.
+
+  `/bin/sh` (absolute) rather than bare "sh", and an explicit curated PATH
+  inside the script for `ssh-keygen`/`mktemp` - both resolved by bare name
+  via chezmoi's `output`, which does a $PATH lookup on whatever the calling
+  shell inherited. Confirmed the hard way: on a machine with a stale/broken
+  ~/.nix-profile still ahead of Homebrew and system paths, that resolved to
+  the nix-profile's own (incompatible) `sh`, and ssh-keygen failed with an
+  opaque "error in libcrypto". Absolute path for the shell itself, plus a
+  known-good PATH for what runs inside it, sidesteps whatever's ambient.
 */ -}}
 {{- $signingKey := "" -}}
 {{- if index $.identities .chezmoi.username -}}
   {{- $privKey := include (printf ".chezmoisecrets/ssh/%s/id_ed25519.age" .chezmoi.username) | decrypt -}}
-  {{- $signingKey = output "sh" "-c" "umask 077; f=$(mktemp); trap 'rm -f \"$f\"' EXIT; printf '%s' \"$1\" > \"$f\"; ssh-keygen -y -f \"$f\"" "sh" $privKey | trim -}}
+  {{- $signingKey = output "/bin/sh" "-c" "PATH=\"/opt/homebrew/bin:/opt/homebrew/sbin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\"; umask 077; f=$(mktemp); trap 'rm -f \"$f\"' EXIT; printf '%s' \"$1\" > \"$f\"; ssh-keygen -y -f \"$f\"" "sh" $privKey | trim -}}
 {{- end -}}
 [user]
     name = {{ $name }}

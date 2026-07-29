@@ -15,7 +15,8 @@
 {{- if not (stat $ageKeyPath) -}}
   {{- $ageKey := promptString "Age private key (same identity used with sops; AGE-SECRET-KEY-1...; leave blank if you'll place the file yourself)" "" -}}
   {{- if $ageKey -}}
-    {{- $ignored := exec "sh" "-c" "mkdir -p \"$(dirname \"$1\")\" && umask 077 && printf '%s\n' \"$2\" > \"$1\" && chmod 600 \"$1\"" "sh" $ageKeyPath $ageKey -}}
+    {{- /* /bin/sh (absolute), not bare "sh" - see the matching note in dot_gitconfig.tmpl for why. */ -}}
+    {{- $ignored := exec "/bin/sh" "-c" "mkdir -p \"$(dirname \"$1\")\" && umask 077 && printf '%s\n' \"$2\" > \"$1\" && chmod 600 \"$1\"" "sh" $ageKeyPath $ageKey -}}
   {{- end -}}
 {{- end -}}
 
