@@ -6,21 +6,29 @@ tap "{{ . }}"
   Per-user extras live in their own file, .chezmoidata/packages-<username>.yaml,
   each under a uniquely-named top-level key (per_user_<username>) so multiple
   files merge without collisions. Missing entirely (unregistered username, or
-  no extras) is fine - degrades to empty lists.
+  no extras) is fine - degrades to empty lists. Shape mirrors the common
+  packages.yaml exactly (brews: {common,darwin,linux}, casks: flat,
+  flatpaks: {common,non_server}, rpm_ostree: flat), so a per-user package can
+  be OS/role-scoped the same way a common one can.
 */ -}}
 {{- $user := index . (printf "per_user_%s" .chezmoi.username) }}
 {{- $userBrews := list }}
+{{- $userOsBrews := list }}
 {{- $userCasks := list }}
 {{- $userFlatpaks := list }}
+{{- $userNonServerFlatpaks := list }}
 {{- if $user }}
-  {{- if $user.brews }}{{ $userBrews = $user.brews }}{{ end }}
+  {{- if and $user.brews $user.brews.common }}{{ $userBrews = $user.brews.common }}{{ end }}
+  {{- if and $user.brews (index $user.brews .chezmoi.os) }}{{ $userOsBrews = index $user.brews .chezmoi.os }}{{ end }}
   {{- if $user.casks }}{{ $userCasks = $user.casks }}{{ end }}
-  {{- if $user.flatpaks }}{{ $userFlatpaks = $user.flatpaks }}{{ end }}
+  {{- if and $user.flatpaks $user.flatpaks.common }}{{ $userFlatpaks = $user.flatpaks.common }}{{ end }}
+  {{- if and $user.flatpaks $user.flatpaks.non_server }}{{ $userNonServerFlatpaks = $user.flatpaks.non_server }}{{ end }}
 {{- end }}
 {{- $brews := .packages.brews.common }}
 {{- $osBrews := index .packages.brews .chezmoi.os }}
 {{- if $osBrews }}{{ $brews = concat $brews $osBrews }}{{ end }}
 {{- if $userBrews }}{{ $brews = concat $brews $userBrews }}{{ end }}
+{{- if $userOsBrews }}{{ $brews = concat $brews $userOsBrews }}{{ end }}
 {{ range $brews -}}
 brew "{{ . }}"
 {{ end -}}
@@ -37,6 +45,7 @@ cask "{{ . }}"
 {{- $flatpaks = concat $flatpaks .packages.flatpaks.non_server }}
 {{- end }}
 {{- if $userFlatpaks }}{{ $flatpaks = concat $flatpaks $userFlatpaks }}{{ end }}
+{{- if and $userNonServerFlatpaks (not .server) }}{{ $flatpaks = concat $flatpaks $userNonServerFlatpaks }}{{ end }}
 {{ range $flatpaks -}}
 flatpak "{{ . }}"
 {{ end -}}

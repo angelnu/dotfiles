@@ -1,7 +1,13 @@
 # Packages that apply only to mireille, on top of the common lists in
-# packages.yaml. Empty placeholder - fill in as needed.
+# packages.yaml. Shape mirrors packages.yaml exactly.
 per_user_mireille:
-  brews: []
+  brews:
+    common:
+      - mongosh
+    darwin: []
+    linux: []
   casks: []
-  flatpaks: []
+  flatpaks:
+    common: []
+    non_server: []
   rpm_ostree: []

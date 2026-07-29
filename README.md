@@ -233,14 +233,22 @@ uniquely-named top-level key so multiple files merge without collisions
 
 ```yaml
 per_user_someusername:
-  brews: []
+  brews:
+    common: []
+    darwin: []
+    linux: []
   casks: []
-  flatpaks: []
+  flatpaks:
+    common: []
+    non_server: []
   rpm_ostree: []
 ```
 
-Merged on top of the common lists in `packages.yaml` when rendering the
-Brewfile and the rpm-ostree script - see "Packages" below.
+Shape mirrors `packages.yaml` exactly (`brews`/`flatpaks` are OS/role-scoped
+the same way the common lists are), so a per-user package can be scoped
+just as precisely as a common one. Merged on top of the common lists in
+`packages.yaml` when rendering the Brewfile and the rpm-ostree script - see
+"Packages" below.
 
 ### Why some of this lives outside `.chezmoidata/`
 
