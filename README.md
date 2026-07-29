@@ -4,7 +4,7 @@ One repo for macOS and Linux machines (e.g. the dev server).
 
 - **Dotfiles/config**: chezmoi templates, branched on OS (`.chezmoi.os`,
   detected automatically — no need to say "mac"), machine `role`
-  (`default` / `server`), and `user` (`.chezmoi.username`, detected
+  (`default` / `server` / `gaming`), and `user` (`.chezmoi.username`, detected
   automatically) - the same repo serves multiple people, each with their own
   age/SSH identity and package overlay, see "Per-user identity" below
 - **macOS Application Support**: `~/Library/Application Support/{fish,
@@ -100,7 +100,7 @@ The repo is public, so cloning needs no auth at all:
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
 ```
 
-Prompts once for `role` (default/server). OS and username are detected
+Prompts once for `role` (default/server/gaming). OS and username are detected
 automatically, not prompted - and git `name`/`email` aren't prompted for at
 all, see "Per-user identity" below. Your username must already have an entry
 in `.chezmoidata/identities.yaml` before running this - `init` fails fast
@@ -241,6 +241,8 @@ per_user_someusername:
   flatpaks:
     common: []
     non_server: []
+    gaming: []       # extra key beyond packages.yaml's own shape - merged in
+                      # only when role="gaming" (see angel's file for a real example)
   rpm_ostree: []
 ```
 

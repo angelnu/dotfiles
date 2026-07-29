@@ -1,5 +1,6 @@
 # Packages that apply only to angel, on top of the common lists in
-# packages.yaml. Shape mirrors packages.yaml exactly.
+# packages.yaml. Shape mirrors packages.yaml exactly, plus one extra key:
+# flatpaks.gaming, merged in only on the gaming-role machine (Bazzite).
 per_user_angel:
   brews:
     common:
@@ -11,6 +12,32 @@ per_user_angel:
     linux: []
   casks: []
   flatpaks:
-    common: []
-    non_server: []
+    common:
+      # com.nextcloud.desktopclient.nextcloud intentionally NOT here: already
+      # covered by packages.rpm_ostree (nextcloud-client-dolphin) on Bazzite.
+      # com.ktechpit.whatsie intentionally NOT here: already covered by the
+      # shared common flatpak com.rtosta.zapzap.
+    non_server:
+    # --- everything from the old Bazzite gaming PC that isn't gaming-specific ---
+      - cc.arduino.IDE2
+      - com.bambulab.BambuStudio
+      - com.github.tchx84.Flatseal
+      - com.ranfdev.DistroShelf
+      - com.simulide.simulide
+      - de.capypara.FieldMonitor
+      - io.github.flattool.Warehouse
+      - io.github.pwr_solaar.solaar
+      - io.podman_desktop.PodmanDesktop
+      - it.mijorus.gearlever
+      - org.gnome.design.IconLibrary
+      - org.kde.discover
+      - org.kde.filelight
+      - org.kde.gwenview
+      - org.kde.haruna
+      - org.kde.kcalc
+      - org.kde.okular
+      - org.kicad.KiCad
+      - org.onlyoffice.desktopeditors
+    # --- gaming-only: merged in when role="gaming" (Bazzite), see Brewfile.tmpl ---
+    gaming: []
   rpm_ostree: []

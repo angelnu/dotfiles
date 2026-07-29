@@ -9,4 +9,5 @@ per_user_mireille:
   flatpaks:
     common: []
     non_server: []
+    gaming: []
   rpm_ostree: []

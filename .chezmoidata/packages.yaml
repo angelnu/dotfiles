@@ -28,6 +28,7 @@ packages:
       - sops
       - age              # also used as chezmoi's own encryption backend, see .chezmoi.toml.tmpl
       - gnupg            # kept for tools that still expect gpg on PATH
+      - bitwarden-cli    # `bw` CLI; separate from the "bitwarden" desktop cask below
 
       # --- npm ---
       - node             # was "nodejs" in nix; corepack ships bundled with node
@@ -119,6 +120,10 @@ packages:
       - org.videolan.VLC
       - com.visualstudio.code
       - com.brave.Browser
+      - org.mozilla.thunderbird_esr
+      - com.prusa3d.PrusaSlicer
+      - org.freecad.FreeCAD
+      - org.virt_manager.virt-manager
 
       # --- development ---
       - com.getpostman.Postman
@@ -138,6 +143,23 @@ packages:
       # (com.nextcloud.desktopclient.nextcloud) doesn't integrate with Dolphin's
       # overlay icons. Layered instead via packages.rpm_ostree below, on hosts
       # that support it.
+    # --- gaming-only: merged in when role="gaming" (Bazzite), see Brewfile.tmpl ---
+    gaming:
+      - app.xemu.xemu
+      - com.github.Matoking.protontricks
+      - com.supermodel3.Supermodel
+      - com.vysp3r.ProtonPlus
+      - io.github.ilya_zlobintsev.LACT
+      - io.github.shiiion.primehack
+      - io.github.wivrn.wivrn
+      - it.mq1.TinyWiiBackupManager
+      - net.davidotek.pupgui2
+      - net.kuribo64.melonDS
+      - org.DolphinEmu.dolphin-emu
+      - org.libretro.RetroArch
+      - org.mamedev.MAME
+      - org.ppsspp.PPSSPP
+      - org.scummvm.ScummVM
 
   rpm_ostree:   # layered packages for rpm-ostree hosts (Fedora Atomic / Bazzite);
                 # ignored on non-rpm-ostree hosts. See

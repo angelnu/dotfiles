@@ -9,7 +9,9 @@ tap "{{ . }}"
   no extras) is fine - degrades to empty lists. Shape mirrors the common
   packages.yaml exactly (brews: {common,darwin,linux}, casks: flat,
   flatpaks: {common,non_server}, rpm_ostree: flat), so a per-user package can
-  be OS/role-scoped the same way a common one can.
+  be OS/role-scoped the same way a common one can. flatpaks.gaming is one
+  extra key beyond that shape, merged in only when .gaming is true (the
+  "gaming" role, prompted per-machine same as "server" - see .chezmoi.toml.tmpl).
 */ -}}
 {{- $user := index . (printf "per_user_%s" .chezmoi.username) }}
 {{- $userBrews := list }}
@@ -17,12 +19,14 @@ tap "{{ . }}"
 {{- $userCasks := list }}
 {{- $userFlatpaks := list }}
 {{- $userNonServerFlatpaks := list }}
+{{- $userGamingFlatpaks := list }}
 {{- if $user }}
   {{- if and $user.brews $user.brews.common }}{{ $userBrews = $user.brews.common }}{{ end }}
   {{- if and $user.brews (index $user.brews .chezmoi.os) }}{{ $userOsBrews = index $user.brews .chezmoi.os }}{{ end }}
   {{- if $user.casks }}{{ $userCasks = $user.casks }}{{ end }}
   {{- if and $user.flatpaks $user.flatpaks.common }}{{ $userFlatpaks = $user.flatpaks.common }}{{ end }}
   {{- if and $user.flatpaks $user.flatpaks.non_server }}{{ $userNonServerFlatpaks = $user.flatpaks.non_server }}{{ end }}
+  {{- if and $user.flatpaks $user.flatpaks.gaming }}{{ $userGamingFlatpaks = $user.flatpaks.gaming }}{{ end }}
 {{- end }}
 {{- $brews := .packages.brews.common }}
 {{- $osBrews := index .packages.brews .chezmoi.os }}
@@ -46,6 +50,7 @@ cask "{{ . }}"
 {{- end }}
 {{- if $userFlatpaks }}{{ $flatpaks = concat $flatpaks $userFlatpaks }}{{ end }}
 {{- if and $userNonServerFlatpaks (not .server) }}{{ $flatpaks = concat $flatpaks $userNonServerFlatpaks }}{{ end }}
+{{- if and $userGamingFlatpaks .gaming }}{{ $flatpaks = concat $flatpaks $userGamingFlatpaks }}{{ end }}
 {{ range $flatpaks -}}
 flatpak "{{ . }}"
 {{ end -}}
