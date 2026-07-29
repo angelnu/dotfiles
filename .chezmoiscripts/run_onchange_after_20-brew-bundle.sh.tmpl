@@ -39,7 +39,19 @@ CLEANUP_FLAGS=(--file="$BREWFILE")
 CLEANUP_FLAGS+=(--flatpaks)
 {{ end -}}
 
-cleanup_output="$(brew bundle cleanup "${CLEANUP_FLAGS[@]}")"
+# Newer Homebrew versions (confirmed: 6.0.13) make `brew bundle cleanup`
+# (no --force) interactively prompt before removing anything, and exit 1 if
+# that prompt is declined OR can't be shown at all - a real behavior change
+# from the plain, always-safe dry-run this script originally assumed.
+# `</dev/null` forces the "can't be shown" path deterministically (confirmed:
+# still safely list-only, nothing actually removed, matching the old
+# behavior) rather than leaving it to guess whether stdin looks like a real
+# terminal. `set +e` around it because exit 1 is the *expected* signal for
+# "found things to remove" here, not a real failure - `set -e` doesn't get
+# to see it and kill the script.
+set +e
+cleanup_output="$(brew bundle cleanup "${CLEANUP_FLAGS[@]}" </dev/null 2>&1)"
+set -e
 
 if [ -z "$cleanup_output" ]; then
     echo "==> Nothing to remove"
