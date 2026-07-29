@@ -36,7 +36,7 @@ brew bundle install --file="$BREWFILE"
 # for your brew version with: brew bundle cleanup --help
 CLEANUP_FLAGS=(--file="$BREWFILE")
 {{ if and (eq .chezmoi.os "linux") (not .server) -}}
-CLEANUP_FLAGS+=(--flatpaks)
+CLEANUP_FLAGS+=(--flatpak)
 {{ end -}}
 
 # Newer Homebrew versions (confirmed: 6.0.13) make `brew bundle cleanup`
