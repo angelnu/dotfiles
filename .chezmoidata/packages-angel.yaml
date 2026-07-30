@@ -1,35 +1,32 @@
 # Packages that apply only to angel, on top of the common lists in
-# packages.yaml. Shape mirrors packages.yaml exactly, plus one extra key:
-# flatpaks.gaming, merged in only on the gaming-role machine (Bazzite).
+# packages.yaml. Same shape (category -> role -> os), see that file.
 per_user_angel:
   brews:
-    common:
-      - angelnu/pinned/juju  # pinned at 3.6.7: homebrew-core moved to 4.x,
-                             # which isn't wire-compatible with older Juju
-                             # controllers. See angelnu/homebrew-pinned.
-      - openstackclient  # was "openstackclient-full" in nix
-    darwin: []
-    linux: []
-  casks: []
+    default:
+      any-os:
+        - angelnu/pinned/juju  # pinned at 3.6.7: homebrew-core moved to 4.x,
+                               # which isn't wire-compatible with older Juju
+                               # controllers. See angelnu/homebrew-pinned.
+        - openstackclient  # was "openstackclient-full" in nix
   flatpaks:
-    common:
-      # com.nextcloud.desktopclient.nextcloud intentionally NOT here: already
-      # covered by packages.rpm_ostree (nextcloud-client-dolphin) on Bazzite.
-      # com.ktechpit.whatsie intentionally NOT here: already covered by the
-      # shared common flatpak com.rtosta.zapzap.
+    default:
+      any-os:
+        # com.nextcloud.desktopclient.nextcloud intentionally NOT here: already
+        # covered by packages.rpm_ostree (nextcloud-client-dolphin) on Bazzite.
+        # com.ktechpit.whatsie intentionally NOT here: already covered by the
+        # shared common flatpak com.rtosta.zapzap.
+        []
     non_server:
-    # --- everything from the old Bazzite gaming PC that isn't gaming-specific ---
-      - cc.arduino.IDE2                # Arduino IDE
-      - com.bambulab.BambuStudio       # Bambu Lab 3D printer slicer
-      - com.github.tchx84.Flatseal     # Flatpak permissions manager
-      - com.ranfdev.DistroShelf        # Distrobox GUI
-      - com.simulide.simulide          # electronics circuit simulator
-      - de.capypara.FieldMonitor       # remote desktop (RDP/VNC/SSH) client
-      - io.github.flattool.Warehouse   # Flatpak app/runtime manager
-      - io.podman_desktop.PodmanDesktop  # container management GUI
-      - it.mijorus.gearlever           # AppImage manager
-      - org.gnome.design.IconLibrary   # GNOME icon browser for app design
-      - org.kicad.KiCad                # PCB design suite
-    # --- gaming-only: merged in when role="gaming" (Bazzite), see Brewfile.tmpl ---
-    gaming: []
-  rpm_ostree: []
+      any-os:
+        # --- everything from the old Bazzite gaming PC that isn't gaming-specific ---
+        - cc.arduino.IDE2                # Arduino IDE
+        - com.bambulab.BambuStudio       # Bambu Lab 3D printer slicer
+        - com.github.tchx84.Flatseal     # Flatpak permissions manager
+        - com.ranfdev.DistroShelf        # Distrobox GUI
+        - com.simulide.simulide          # electronics circuit simulator
+        - de.capypara.FieldMonitor       # remote desktop (RDP/VNC/SSH) client
+        - io.github.flattool.Warehouse   # Flatpak app/runtime manager
+        - io.podman_desktop.PodmanDesktop  # container management GUI
+        - it.mijorus.gearlever           # AppImage manager
+        - org.gnome.design.IconLibrary   # GNOME icon browser for app design
+        - org.kicad.KiCad                # PCB design suite

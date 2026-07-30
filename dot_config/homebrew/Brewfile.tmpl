@@ -1,59 +1,33 @@
-{{/* Rendered from .chezmoidata/packages.yaml — this file IS the desired state. */}}
-{{- range .packages.taps }}
+{{- /*
+  Rendered from .chezmoidata/packages.yaml — this file IS the desired
+  state, merged with per-user extras from .chezmoidata/packages-<username>.yaml
+  (key per_user_<username>) if any exist for the current user, and
+  filtered down to what applies to this machine's role
+  (default/server/non_server/gaming/non_gaming) and OS.
+
+  The actual merge/role-selection logic lives in .chezmoitemplates/
+  (merged-packages, role-buckets, merged-package-list) - shared with
+  .chezmoiscripts/run_onchange_after_21-rpm-ostree.sh.tmpl, one
+  implementation instead of two.
+*/ -}}
+{{- $merged := (includeTemplate "merged-packages" .) | fromJson -}}
+{{- $roleBuckets := (includeTemplate "role-buckets" .) | fromJson -}}
+{{- $taps := (includeTemplate "merged-package-list" (dict "catDict" $merged.taps "roleBuckets" $roleBuckets "os" .chezmoi.os)) | fromJson -}}
+{{- range $taps }}
 tap "{{ . }}"
 {{ end -}}
-{{- /*
-  packages.yaml's own flatpaks.gaming (shared, for anyone on a role="gaming"
-  machine) is merged below, same as flatpaks.common/non_server.
-
-  Per-user extras live in their own file, .chezmoidata/packages-<username>.yaml,
-  each under a uniquely-named top-level key (per_user_<username>) so multiple
-  files merge without collisions. Missing entirely (unregistered username, or
-  no extras) is fine - degrades to empty lists. Shape mirrors the common
-  packages.yaml exactly (brews: {common,darwin,linux}, casks: flat,
-  flatpaks: {common,non_server,gaming}, rpm_ostree: flat), so a per-user
-  package can be OS/role-scoped the same way a common one can - e.g. for a
-  gaming-only tool that's specific to one person rather than shared.
-*/ -}}
-{{- $user := index . (printf "per_user_%s" .chezmoi.username) }}
-{{- $userBrews := list }}
-{{- $userOsBrews := list }}
-{{- $userCasks := list }}
-{{- $userFlatpaks := list }}
-{{- $userNonServerFlatpaks := list }}
-{{- $userGamingFlatpaks := list }}
-{{- if $user }}
-  {{- if and $user.brews $user.brews.common }}{{ $userBrews = $user.brews.common }}{{ end }}
-  {{- if and $user.brews (index $user.brews .chezmoi.os) }}{{ $userOsBrews = index $user.brews .chezmoi.os }}{{ end }}
-  {{- if $user.casks }}{{ $userCasks = $user.casks }}{{ end }}
-  {{- if and $user.flatpaks $user.flatpaks.common }}{{ $userFlatpaks = $user.flatpaks.common }}{{ end }}
-  {{- if and $user.flatpaks $user.flatpaks.non_server }}{{ $userNonServerFlatpaks = $user.flatpaks.non_server }}{{ end }}
-  {{- if and $user.flatpaks $user.flatpaks.gaming }}{{ $userGamingFlatpaks = $user.flatpaks.gaming }}{{ end }}
-{{- end }}
-{{- $brews := .packages.brews.common }}
-{{- $osBrews := index .packages.brews .chezmoi.os }}
-{{- if $osBrews }}{{ $brews = concat $brews $osBrews }}{{ end }}
-{{- if $userBrews }}{{ $brews = concat $brews $userBrews }}{{ end }}
-{{- if $userOsBrews }}{{ $brews = concat $brews $userOsBrews }}{{ end }}
+{{- $brews := (includeTemplate "merged-package-list" (dict "catDict" $merged.brews "roleBuckets" $roleBuckets "os" .chezmoi.os)) | fromJson }}
 {{ range $brews -}}
 brew "{{ . }}"
 {{ end -}}
 {{- if eq .chezmoi.os "darwin" }}
-{{- $casks := .packages.casks }}
-{{- if $userCasks }}{{ $casks = concat $casks $userCasks }}{{ end }}
+{{- $casks := (includeTemplate "merged-package-list" (dict "catDict" $merged.casks "roleBuckets" $roleBuckets "os" .chezmoi.os)) | fromJson }}
 {{ range $casks -}}
 cask "{{ . }}"
 {{ end -}}
 {{- end }}
 {{- if eq .chezmoi.os "linux" }}
-{{- $flatpaks := .packages.flatpaks.common }}
-{{- if not .server }}
-{{- $flatpaks = concat $flatpaks .packages.flatpaks.non_server }}
-{{- end }}
-{{- if and .packages.flatpaks.gaming .gaming }}{{ $flatpaks = concat $flatpaks .packages.flatpaks.gaming }}{{ end }}
-{{- if $userFlatpaks }}{{ $flatpaks = concat $flatpaks $userFlatpaks }}{{ end }}
-{{- if and $userNonServerFlatpaks (not .server) }}{{ $flatpaks = concat $flatpaks $userNonServerFlatpaks }}{{ end }}
-{{- if and $userGamingFlatpaks .gaming }}{{ $flatpaks = concat $flatpaks $userGamingFlatpaks }}{{ end }}
+{{- $flatpaks := (includeTemplate "merged-package-list" (dict "catDict" $merged.flatpaks "roleBuckets" $roleBuckets "os" .chezmoi.os)) | fromJson }}
 {{ range $flatpaks -}}
 flatpak "{{ . }}"
 {{ end -}}

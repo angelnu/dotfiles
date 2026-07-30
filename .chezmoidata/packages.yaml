@@ -1,177 +1,190 @@
 packages:
+  # Every category below shares the same shape: role bucket
+  # (default/server/non_server/gaming/non_gaming - "default" always
+  # applies, plus exactly one of each complementary pair depending on the
+  # machine's role) -> os (any-os/darwin/linux - "any-os" applies to both).
+  # See .chezmoitemplates/{merged-packages,role-buckets,merged-package-list}
+  # for how this gets merged with a per-user overlay and flattened.
   taps:
-    - fluxcd/tap      # needed for fluxcd/tap/flux below
-    - hashicorp/tap   # needed for hashicorp/tap/vault and .../terraform below
-    - angelnu/pinned  # needed for angelnu/pinned/juju below - version-pinned formulae
+    default:
+      any-os:
+        - fluxcd/tap      # needed for fluxcd/tap/flux below
+        - hashicorp/tap   # needed for hashicorp/tap/vault and .../terraform below
+        - angelnu/pinned  # needed for angelnu/pinned/juju below - version-pinned formulae
 
   brews:
-    common:
-      # --- dotfiles baseline (not from the old nix config) ---
-      - ripgrep
-      - fzf
-      - htop
-      - chezmoi         # this tool itself, so `chezmoi update` keeps working
-      - gh               # GitHub CLI - not needed by anything in this repo,
-                         # just generally useful (e.g. creating repos via Claude Code)
-      - jq               # CLI JSON processor
-      - fish             # login shell, see dot_config/fish/config.fish.tmpl
-      - vim              # was "programs.vim" in nix, see dot_vimrc
+    default:
+      any-os:
+        # --- dotfiles baseline (not from the old nix config) ---
+        - ripgrep
+        - fzf
+        - htop
+        - chezmoi         # this tool itself, so `chezmoi update` keeps working
+        - gh               # GitHub CLI - not needed by anything in this repo,
+                           # just generally useful (e.g. creating repos via Claude Code)
+        - jq               # CLI JSON processor
+        - fish             # login shell, see dot_config/fish/config.fish.tmpl
+        - vim              # was "programs.vim" in nix, see dot_vimrc
 
-      # --- Kubernetes ---
-      - kubectl
-      - helm             # was "kubernetes-helm" in nix
-      - fluxcd/tap/flux  # was "fluxcd" in nix - NOT plain "flux" (homebrew core's
-                         # "flux" is unrelated: InfluxData's query language)
-      - openshift-cli    # was "openshift" in nix; provides the `oc` CLI
+        # --- Kubernetes ---
+        - kubectl
+        - helm             # was "kubernetes-helm" in nix
+        - fluxcd/tap/flux  # was "fluxcd" in nix - NOT plain "flux" (homebrew core's
+                           # "flux" is unrelated: InfluxData's query language)
+        - openshift-cli    # was "openshift" in nix; provides the `oc` CLI
 
-      # --- secrets ---
-      - sops
-      - age              # also used as chezmoi's own encryption backend, see .chezmoi.toml.tmpl
-      - gnupg            # kept for tools that still expect gpg on PATH
-      - bitwarden-cli    # `bw` CLI; separate from the "bitwarden" desktop cask below
+        # --- secrets ---
+        - sops
+        - age              # also used as chezmoi's own encryption backend, see .chezmoi.toml.tmpl
+        - gnupg            # kept for tools that still expect gpg on PATH
+        - bitwarden-cli    # `bw` CLI; separate from the "bitwarden" desktop cask below
 
-      # --- npm ---
-      - node             # was "nodejs" in nix; corepack ships bundled with node
+        # --- npm ---
+        - node             # was "nodejs" in nix; corepack ships bundled with node
 
-      # --- vpn ---
-      - openvpn
-      - openfortivpn
+        # --- vpn ---
+        - openvpn
+        - openfortivpn
 
-      # --- development ---
-      - pre-commit       # manage git pre-commit hooks
-      - git              # so it's newer than the OS-bundled version
-      - go-task          # was "go-task" in nix; task runner/build tool (Taskfile)
-      - docker           # was "docker-client" in nix; CLI only, no daemon/engine bundled
-      - make             # was "gnumake" in nix
-      - act              # run GitHub Actions locally
-      - wireguard-tools
-      - podman
-      - screen
-      - wget
-      - yq               # YAML/JSON processor
-      - hashicorp/tap/vault     # HashiCorp Vault
+        # --- development ---
+        - pre-commit       # manage git pre-commit hooks
+        - git              # so it's newer than the OS-bundled version
+        - go-task          # was "go-task" in nix; task runner/build tool (Taskfile)
+        - docker           # was "docker-client" in nix; CLI only, no daemon/engine bundled
+        - make             # was "gnumake" in nix
+        - act              # run GitHub Actions locally
+        - wireguard-tools
+        - podman
+        - screen
+        - wget
+        - yq               # YAML/JSON processor
+        - hashicorp/tap/vault     # HashiCorp Vault
 
-      # --- Python (was python3.withPackages in nix) ---
-      - python3          # tracks Homebrew's current default python@X.Y
-      - pipx             # install/run Python CLIs in isolated envs
-      - uv               # fast Python package/venv manager
-      - tox              # Python test-environment runner
+        # --- Python (was python3.withPackages in nix) ---
+        - python3          # tracks Homebrew's current default python@X.Y
+        - pipx             # install/run Python CLIs in isolated envs
+        - uv               # fast Python package/venv manager
+        - tox              # Python test-environment runner
 
-      # --- Java ---
-      - maven
-      - openjdk          # was "jdk" in nix
+        # --- Java ---
+        - maven
+        - openjdk          # was "jdk" in nix
 
-      # --- cloud ---
-      - ansible
+        # --- cloud ---
+        - ansible
 
-      # --- Others ---
-      - dos2unix         # convert DOS line endings to Unix
-      - openssh          # newer than the OS-bundled version
-      - postgresql
-      - minio-mc         # was "minio-client" in nix; S3-compatible object storage CLI
-      - cairo            # 2D graphics library, dependency for some tools
-      - ollama           # run/manage local LLMs
+        # --- Others ---
+        - dos2unix         # convert DOS line endings to Unix
+        - openssh          # newer than the OS-bundled version
+        - postgresql
+        - minio-mc         # was "minio-client" in nix; S3-compatible object storage CLI
+        - cairo            # 2D graphics library, dependency for some tools
+        - ollama           # run/manage local LLMs
 
-      # --- terraform ---
-      - hashicorp/tap/terraform
-      - openssl          # needed to encrypt HPVS contracts
+        # --- terraform ---
+        - hashicorp/tap/terraform
+        - openssl          # needed to encrypt HPVS contracts
 
-      # --- shell/session helpers (were `programs.*` in nix, not home.packages) ---
-      - direnv           # was "programs.direnv"; per-directory env loading
-      - go               # was "programs.go"; Go toolchain
-    darwin:
-      - mas
-    linux:
-      - procps           # ps/top/free (GNU versions); mac already has native tools
-      - keychain         # ssh-agent front-end; mac already covered by osxkeychain credential helper
+        # --- shell/session helpers (were `programs.*` in nix, not home.packages) ---
+        - direnv           # was "programs.direnv"; per-directory env loading
+        - go               # was "programs.go"; Go toolchain
+      darwin:
+        - mas
+      linux:
+        - procps           # ps/top/free (GNU versions); mac already has native tools
+        - keychain         # ssh-agent front-end; mac already covered by osxkeychain credential helper
 
   casks:      # macOS GUI apps
-    # --- dotfiles baseline (not from the old nix config) ---
-    - wezterm
-    - visual-studio-code
-    - brave-browser
-    - claude           # Claude Desktop; no Linux flatpak available, mac-only
+    default:
+      any-os:
+        # --- dotfiles baseline (not from the old nix config) ---
+        - wezterm
+        - visual-studio-code
+        - brave-browser
+        - claude           # Claude Desktop; no Linux flatpak available, mac-only
 
-    # --- development ---
-    - postman          # API development GUI
-    - drawio           # diagramming tool
-    - android-platform-tools  # was "android-tools" in nix; adb/fastboot.
-                              # No longer a formula (homebrew migrated it to
-                              # a cask); no Linux equivalent, so mac-only now.
-    - rancher          # Rancher Desktop; container/Kubernetes management
-    - utm              # QEMU-based VM UI
+        # --- development ---
+        - postman          # API development GUI
+        - drawio           # diagramming tool
+        - android-platform-tools  # was "android-tools" in nix; adb/fastboot.
+                                  # No longer a formula (homebrew migrated it to
+                                  # a cask); no Linux equivalent, so mac-only now.
+        - rancher          # Rancher Desktop; container/Kubernetes management
+        - utm              # QEMU-based VM UI
 
-    # --- Others ---
-    - slack
-    - discord
-    - openscad          # programmable 3D CAD
-    - dosbox-x-app       # DOS emulator
-    - wireshark-app       # network protocol analyzer
-    - bitwarden          # password manager
-    - nextcloud          # Nextcloud desktop sync client
-    - signal              # private messenger
-    - whatsapp            # official desktop client (mac-only; no official Linux
-                           # client exists, see ZapZap flatpak below)
+        # --- Others ---
+        - slack
+        - discord
+        - openscad          # programmable 3D CAD
+        - dosbox-x-app       # DOS emulator
+        - wireshark-app       # network protocol analyzer
+        - bitwarden          # password manager
+        - nextcloud          # Nextcloud desktop sync client
+        - signal              # private messenger
+        - whatsapp            # official desktop client (mac-only; no official Linux
+                               # client exists, see ZapZap flatpak below)
 
   flatpaks:   # Linux GUI apps (system-wide, from flathub)
-    common: []            # installed on every Linux machine, regardless of role
     non_server:           # installed on every Linux machine except the server
-      # --- dotfiles baseline (not from the old nix config) ---
-      - org.videolan.VLC             # VLC media player
-      # - com.visualstudio.code        # VS Code editor
-      - com.brave.Browser            # Brave browser
-      - org.mozilla.thunderbird_esr  # email client
-      - com.prusa3d.PrusaSlicer      # 3D printer slicer
-      - org.freecad.FreeCAD          # parametric 3D CAD
-      - org.virt_manager.virt-manager  # libvirt/QEMU VM manager
-      - io.github.pwr_solaar.solaar    # Logitech peripherals manager
-      - org.kde.discover               # KDE software center
-      - org.kde.filelight              # disk usage visualizer
-      - org.kde.gwenview               # image viewer
-      - org.kde.haruna                 # video player
-      - org.kde.kcalc                  # calculator
-      - org.kde.okular                 # document/PDF viewer
-      - org.onlyoffice.desktopeditors  # office suite
+      any-os:
+        # --- dotfiles baseline (not from the old nix config) ---
+        - org.videolan.VLC             # VLC media player
+        # - com.visualstudio.code        # VS Code editor
+        - com.brave.Browser            # Brave browser
+        - org.mozilla.thunderbird_esr  # email client
+        - com.prusa3d.PrusaSlicer      # 3D printer slicer
+        - org.freecad.FreeCAD          # parametric 3D CAD
+        - org.virt_manager.virt-manager  # libvirt/QEMU VM manager
+        - io.github.pwr_solaar.solaar    # Logitech peripherals manager
+        - org.kde.discover               # KDE software center
+        - org.kde.filelight              # disk usage visualizer
+        - org.kde.gwenview               # image viewer
+        - org.kde.haruna                 # video player
+        - org.kde.kcalc                  # calculator
+        - org.kde.okular                 # document/PDF viewer
+        - org.onlyoffice.desktopeditors  # office suite
 
-      # --- development ---
-      - com.getpostman.Postman     # API development GUI
-      - com.jgraph.drawio.desktop  # diagramming tool
+        # --- development ---
+        - com.getpostman.Postman     # API development GUI
+        - com.jgraph.drawio.desktop  # diagramming tool
 
-      # --- Others ---
-      - com.slack.Slack        # team chat
-      - com.discordapp.Discord  # voice/chat
-      - org.openscad.OpenSCAD  # programmable 3D CAD
-      - com.dosbox_x.DOSBox-X  # DOS emulator
-      - org.wireshark.Wireshark  # network protocol analyzer
-      - com.bitwarden.desktop  # password manager
-      - org.signal.Signal      # private messenger
-      - com.rtosta.zapzap  # ZapZap; unofficial WhatsApp Web wrapper - WhatsApp
-                           # has no official Linux client
-      # nextcloud-client intentionally NOT here: the flatpak
-      # (com.nextcloud.desktopclient.nextcloud) doesn't integrate with Dolphin's
-      # overlay icons. Layered instead via packages.rpm_ostree below, on hosts
-      # that support it.
-    # --- gaming-only: merged in when role="gaming" (Bazzite), see Brewfile.tmpl ---
-    gaming:
-      - app.xemu.xemu                        # original Xbox emulator
-      - com.github.Matoking.protontricks      # Proton prefix helper for Steam games
-      - com.supermodel3.Supermodel            # Sega Model 3 arcade emulator
-      - com.vysp3r.ProtonPlus                 # Proton/Wine compatibility tool manager
-      - io.github.ilya_zlobintsev.LACT        # Linux AMD GPU control (overclock/fan)
-      - io.github.shiiion.primehack           # Dolphin fork with VR mods (Metroid Prime)
-      - io.github.wivrn.wivrn                 # VR headset streaming server
-      - it.mq1.TinyWiiBackupManager           # Wii game backup manager
-      - net.davidotek.pupgui2                 # ProtonUp-Qt; installs Proton-GE/Wine-GE
-      - net.kuribo64.melonDS                  # Nintendo DS emulator
-      - org.DolphinEmu.dolphin-emu            # GameCube/Wii emulator
-      - org.libretro.RetroArch                # multi-system emulator frontend
-      - org.mamedev.MAME                      # arcade machine emulator
-      - org.ppsspp.PPSSPP                     # PSP emulator
-      - org.scummvm.ScummVM                   # classic point-and-click adventure engine
+        # --- Others ---
+        - com.slack.Slack        # team chat
+        - com.discordapp.Discord  # voice/chat
+        - org.openscad.OpenSCAD  # programmable 3D CAD
+        - com.dosbox_x.DOSBox-X  # DOS emulator
+        - org.wireshark.Wireshark  # network protocol analyzer
+        - com.bitwarden.desktop  # password manager
+        - org.signal.Signal      # private messenger
+        - com.rtosta.zapzap  # ZapZap; unofficial WhatsApp Web wrapper - WhatsApp
+                             # has no official Linux client
+        # nextcloud-client intentionally NOT here: the flatpak
+        # (com.nextcloud.desktopclient.nextcloud) doesn't integrate with Dolphin's
+        # overlay icons. Layered instead via packages.rpm_ostree below, on hosts
+        # that support it.
+    gaming:   # merged in only when role="gaming" (Bazzite)
+      any-os:
+        - app.xemu.xemu                        # original Xbox emulator
+        - com.github.Matoking.protontricks      # Proton prefix helper for Steam games
+        - com.supermodel3.Supermodel            # Sega Model 3 arcade emulator
+        - com.vysp3r.ProtonPlus                 # Proton/Wine compatibility tool manager
+        - io.github.ilya_zlobintsev.LACT        # Linux AMD GPU control (overclock/fan)
+        - io.github.shiiion.primehack           # Dolphin fork with VR mods (Metroid Prime)
+        - io.github.wivrn.wivrn                 # VR headset streaming server
+        - it.mq1.TinyWiiBackupManager           # Wii game backup manager
+        - net.davidotek.pupgui2                 # ProtonUp-Qt; installs Proton-GE/Wine-GE
+        - net.kuribo64.melonDS                  # Nintendo DS emulator
+        - org.DolphinEmu.dolphin-emu            # GameCube/Wii emulator
+        - org.libretro.RetroArch                # multi-system emulator frontend
+        - org.mamedev.MAME                      # arcade machine emulator
+        - org.ppsspp.PPSSPP                     # PSP emulator
+        - org.scummvm.ScummVM                   # classic point-and-click adventure engine
 
   rpm_ostree:   # layered packages for rpm-ostree hosts (Fedora Atomic / Bazzite);
                 # ignored on non-rpm-ostree hosts. See
                 # .chezmoiscripts/run_onchange_after_21-rpm-ostree.sh.tmpl
-    - nextcloud-client
-    - nextcloud-client-dolphin  # real Dolphin overlay-icon integration; the
-                                # flatpak can't provide this (sandboxed)
+    default:
+      any-os:
+        - nextcloud-client
+        - nextcloud-client-dolphin  # real Dolphin overlay-icon integration; the
+                                    # flatpak can't provide this (sandboxed)

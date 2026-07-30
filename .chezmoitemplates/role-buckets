@@ -1,0 +1,11 @@
+{{- /*
+  Which role buckets apply to the current machine: "default" always, plus
+  exactly one of each complementary pair - server or non_server, gaming or
+  non_gaming - based on the role prompted at `chezmoi init` (see
+  .chezmoi.toml.tmpl, [data] server/gaming). JSON-encoded list; parse back
+  with `fromJson` after `includeTemplate`.
+*/ -}}
+{{- $buckets := list "default" -}}
+{{- if .server }}{{ $buckets = append $buckets "server" }}{{ else }}{{ $buckets = append $buckets "non_server" }}{{ end -}}
+{{- if .gaming }}{{ $buckets = append $buckets "gaming" }}{{ else }}{{ $buckets = append $buckets "non_gaming" }}{{ end -}}
+{{- $buckets | toJson -}}

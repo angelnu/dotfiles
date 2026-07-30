@@ -66,6 +66,15 @@ One repo for macOS and Linux machines (e.g. the dev server).
   anywhere. Nothing to paste for the SSH key at all, beyond the one-time
   registration described in "Per-user identity" below.
 
+  The signing key itself is only half the story - `git commit -S` also
+  needs a running `ssh-agent` with that key loaded. On Linux (unlike macOS,
+  which always has one running via launchd) nothing provides that on its
+  own, so both `dot_config/fish/config.fish.tmpl` and `dot_profile.tmpl`
+  (sourced by `dot_bashrc` too, for bash/sh/dev-container shells that don't
+  go through fish) start-or-reuse one via `keychain` before falling through
+  to a plain `ssh-add`. Confirmed the hard way as a real gap - signing
+  silently failed on a machine where nothing had ever started an agent.
+
 ## One-time setup
 
 ```sh
@@ -229,28 +238,30 @@ becoming multi-recipient like the personal key above.
 
 `.chezmoidata/packages-<username>.yaml`, one file per person, each under a
 uniquely-named top-level key so multiple files merge without collisions
-(chezmoi merges every file under `.chezmoidata/` into one data tree):
+(chezmoi merges every file under `.chezmoidata/` into one data tree).
+Same shape as `packages.yaml` itself (see "Packages" below for what that
+shape means and how it's merged/flattened):
 
 ```yaml
 per_user_someusername:
   brews:
-    common: []
-    darwin: []
-    linux: []
-  casks: []
+    default:
+      any-os: []
+      darwin: []
+      linux: []
+  casks:
+    default:
+      any-os: []
   flatpaks:
-    common: []
-    non_server: []
-    gaming: []       # extra key beyond packages.yaml's own shape - merged in
-                      # only when role="gaming" (see angel's file for a real example)
-  rpm_ostree: []
+    gaming:            # only merged in when role="gaming" - see angel's
+      any-os: []       # file for a real example
+  rpm_ostree: {}
 ```
 
-Shape mirrors `packages.yaml` exactly (`brews`/`flatpaks` are OS/role-scoped
-the same way the common lists are), so a per-user package can be scoped
-just as precisely as a common one. Merged on top of the common lists in
-`packages.yaml` when rendering the Brewfile and the rpm-ostree script - see
-"Packages" below.
+Merged on top of `packages.yaml`'s own lists (concatenated, not replaced)
+when rendering the Brewfile and the rpm-ostree script - see "Packages"
+below. A category/role/os you don't need can just be omitted entirely
+(everything degrades gracefully to empty).
 
 ### Why some of this lives outside `.chezmoidata/`
 
@@ -301,16 +312,53 @@ you find more readable.
 
 ### Packages
 
-`brew bundle install` adds; `brew bundle cleanup --force` removes anything not
-declared in the Brewfile. Both run from
-`.chezmoiscripts/run_onchange_after_20-brew-bundle.sh.tmpl`,
-which re-fires whenever `packages.yaml` changes. So deleting a line from
-`packages.yaml` uninstalls it fleet-wide on the next `chezmoi update`.
+`.chezmoidata/packages.yaml` declares five categories - `taps`, `brews`,
+`casks`, `flatpaks`, `rpm_ostree` - and every one of them shares the exact
+same two-level shape: **role** bucket, then **os** bucket:
+
+```yaml
+brews:
+  default:          # always applies
+    any-os: []       # both darwin and linux
+    darwin: []
+    linux: []
+  server:            # only when role="server"
+    any-os: []
+  non_server:        # only when role != "server" (default or gaming)
+    any-os: []
+  gaming:            # only when role="gaming"
+    any-os: []
+  non_gaming:        # only when role != "gaming" (default or server)
+    any-os: []
+```
+
+A machine always gets `default`, plus exactly one of `server`/`non_server`,
+plus exactly one of `gaming`/`non_gaming` - so a headless server on the
+`gaming` role's opposite side still gets `non_gaming`, etc. Any bucket you
+don't need can just be omitted (see `.chezmoidata/packages.yaml` itself -
+most categories only ever populate `default` and one or two others).
 
 Per-user extras (`.chezmoidata/packages-<username>.yaml`, see "Per-user
-identity" above) are merged in on top of the common lists for whoever is
-currently applying - deleting a line there only uninstalls it for that one
-person, not everyone.
+identity" above) share this exact same shape and get merged in - list
+leaves concatenated with the common ones, not replacing them - for whoever
+is currently applying. Deleting a line there only uninstalls it for that
+one person, not everyone.
+
+The merge (`.packages` + the current user's overlay) and the
+role/os-filtering down to a flat list are both implemented once, as shared
+`.chezmoitemplates/` partials (`merged-packages`, `role-buckets`,
+`merged-package-list`) called via chezmoi's `includeTemplate` function -
+the only way to get a *value* back from a shared template, since plain
+`template` only writes output. Used identically by both
+`dot_config/homebrew/Brewfile.tmpl` and the rpm-ostree script below, so
+there's one implementation of "what applies to this machine," not two.
+
+`brew bundle install` adds; `brew bundle cleanup --force` removes anything not
+declared in the rendered Brewfile. Both run from
+`.chezmoiscripts/run_onchange_after_20-brew-bundle.sh.tmpl`,
+which re-fires whenever `packages.yaml` (or the current user's overlay)
+changes. So deleting a line from either uninstalls it on the next
+`chezmoi update`.
 
 The cleanup phase only runs at all if there's something to remove (skipped
 silently otherwise), and prints what it would remove and asks before doing
@@ -329,18 +377,19 @@ Caveats:
 
 #### rpm-ostree (Fedora Atomic / Bazzite)
 
-`packages.rpm_ostree` (plus each person's `per_user_<username>.rpm_ostree`
-overlay) declares packages to layer with `rpm-ostree install` on atomic hosts
-- things brew/flatpak can't provide, e.g. `nextcloud-client-dolphin` for real
-file-manager overlay-icon integration (a flatpak's sandbox can't hook into
-Dolphin the same way). Converged by
+`packages.rpm_ostree` (same role/os-scoped shape as everything else, merged
+with the current user's overlay via the shared `.chezmoitemplates/`
+partials described above) declares packages to layer with `rpm-ostree
+install` on atomic hosts - things brew/flatpak can't provide, e.g.
+`nextcloud-client-dolphin` for real file-manager overlay-icon integration
+(a flatpak's sandbox can't hook into Dolphin the same way). Converged by
 `.chezmoiscripts/run_onchange_after_21-rpm-ostree.sh.tmpl`, which:
 
 - Renders to an empty no-op file on any host where `/run/ostree-booted` doesn't
   exist (i.e. everywhere except rpm-ostree hosts) - safe to leave declared
   packages in `packages.yaml` even if only some machines are atomic.
-- Diffs `packages.rpm_ostree` against `rpm-ostree status`'s requested-package
-  list, `rpm-ostree install`s anything missing, and offers to
+- Diffs the flattened package list against `rpm-ostree status`'s
+  requested-package list, `rpm-ostree install`s anything missing, and offers to
   `rpm-ostree uninstall` anything no longer declared (same ask-first pattern as
   brew cleanup; set `RPM_OSTREE_PRUNE_CONFIRM=yes` for unattended runs).
 - **Never reboots automatically.** Layered changes only take effect after a

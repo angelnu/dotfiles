@@ -1,13 +1,7 @@
 # Packages that apply only to mireille, on top of the common lists in
-# packages.yaml. Shape mirrors packages.yaml exactly.
-per_user_mireille:
-  brews:
-    common: []
-    darwin: []
-    linux: []
-  casks: []
-  flatpaks:
-    common: []
-    non_server: []
-    gaming: []
-  rpm_ostree: []
+# packages.yaml. Same shape (category -> role -> os), see that file.
+# Empty placeholder - fill in as needed, e.g.:
+#   brews:
+#     default:
+#       any-os: [mongosh]
+per_user_mireille: {}
