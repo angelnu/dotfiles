@@ -64,16 +64,19 @@ runcmd:
   - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
   - usermod -aG docker angel
 
-  # Pre-seed the non-secret chezmoi init prompts (role/prune) so only the
-  # age private key remains an interactive step. promptChoiceOnce/
+  # Pre-seed the non-secret chezmoi init prompts (roles/prune) so only the
+  # age private key remains an interactive step. promptMultichoiceOnce/
   # promptBoolOnce read from this [data] section instead of prompting when
   # a value's already present - verified this against the real template
-  # before relying on it here.
+  # before relying on it here. No tags (roles = []) matches the old
+  # "role = default" behavior - add "server" here if this VM should
+  # actually be tagged as one (nothing currently branches on it, but it's
+  # there for future packages.yaml use).
   - install -d -m 700 -o angel -g angel /home/angel/.config/chezmoi
   - |
     cat > /home/angel/.config/chezmoi/chezmoi.toml <<'EOF'
     [data]
-        role = "default"
+        roles = []
         prune = true
     EOF
   - chown angel:angel /home/angel/.config/chezmoi/chezmoi.toml
@@ -83,5 +86,5 @@ final_message: |
   cloud-init done after $UPTIME seconds.
   SSH in as angel and run:
     sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
-  It'll only prompt for the age private key - role and prune are already
+  It'll only prompt for the age private key - roles and prune are already
   answered.

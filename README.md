@@ -3,8 +3,9 @@
 One repo for macOS and Linux machines (e.g. the dev server).
 
 - **Dotfiles/config**: chezmoi templates, branched on OS (`.chezmoi.os`,
-  detected automatically — no need to say "mac"), machine `role`
-  (`default` / `server` / `gaming`), and `user` (`.chezmoi.username`, detected
+  detected automatically — no need to say "mac"), machine `roles` (a set of
+  independent tags - `server`/`gui`/`gaming`/`develop`/`work`, any
+  combination or none), and `user` (`.chezmoi.username`, detected
   automatically) - the same repo serves multiple people, each with their own
   age/SSH identity and package overlay, see "Per-user identity" below
 - **macOS Application Support**: `~/Library/Application Support/{fish,
@@ -38,8 +39,8 @@ One repo for macOS and Linux machines (e.g. the dev server).
 - **Packages**: common list in `.chezmoidata/packages.yaml`, plus an optional
   per-user overlay in `.chezmoidata/packages-<username>.yaml` → both merged
   and rendered into a real `~/.config/homebrew/Brewfile` → applied with
-  `brew bundle` (formulae + casks on macOS, formulae + Flatpaks on
-  non-server Linux; rpm-ostree layered packages on Fedora Atomic hosts go
+  `brew bundle` (formulae + casks on macOS, formulae + Flatpaks on Linux
+  machines tagged `gui`; rpm-ostree layered packages on Fedora Atomic hosts go
   through a separate script, see below)
 - **Secrets**: age-encrypted files committed to this repo (public); each
   person's age *private key* is the only secret outside git, never shared
@@ -109,7 +110,8 @@ The repo is public, so cloning needs no auth at all:
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply angelnu/dotfiles
 ```
 
-Prompts once for `role` (default/server/gaming). OS and username are detected
+Prompts once for `roles` (multi-select: server/gui/gaming/develop/work, any
+combination or none - space to toggle, enter to confirm). OS and username are detected
 automatically, not prompted - and git `name`/`email` aren't prompted for at
 all, see "Per-user identity" below. Your username must already have an entry
 in `.chezmoidata/identities.yaml` before running this - `init` fails fast
@@ -253,8 +255,8 @@ per_user_someusername:
     default:
       any-os: []
   flatpaks:
-    gaming:            # only merged in when role="gaming" - see angel's
-      any-os: []       # file for a real example
+    gaming:            # only merged in when the "gaming" tag is selected -
+      any-os: []       # see angel's file for a real example
   rpm_ostree: {}
 ```
 
@@ -322,21 +324,29 @@ brews:
     any-os: []       # both darwin and linux
     darwin: []
     linux: []
-  server:            # only when role="server"
+  server:            # only on a machine tagged "server"
     any-os: []
-  non_server:        # only when role != "server" (default or gaming)
+  gui:               # only on a machine tagged "gui" (has a desktop)
     any-os: []
-  gaming:            # only when role="gaming"
+  gaming:            # only on a machine tagged "gaming"
     any-os: []
-  non_gaming:        # only when role != "gaming" (default or server)
+  develop:           # only on a machine tagged "develop"
+    any-os: []
+  work:              # only on a machine tagged "work"
     any-os: []
 ```
 
-A machine always gets `default`, plus exactly one of `server`/`non_server`,
-plus exactly one of `gaming`/`non_gaming` - so a headless server on the
-`gaming` role's opposite side still gets `non_gaming`, etc. Any bucket you
-don't need can just be omitted (see `.chezmoidata/packages.yaml` itself -
-most categories only ever populate `default` and one or two others).
+A machine always gets `default`, plus whichever of `server`/`gui`/`gaming`/
+`develop`/`work` it was tagged with at `chezmoi init` (`roles`, a
+multi-select - any combination, or none). Every bucket is a plain positive
+"install this when the tag is present" rule; there's deliberately no
+negation/complementary-pair concept (an earlier design had `non_server`/
+`non_gaming` for "everything except" - replaced by tagging every
+desktop-ish machine `gui` instead, since a positive "has a desktop" rule
+is simpler to reason about than an implicit "isn't the one exception").
+Any bucket you don't need can just be omitted (see
+`.chezmoidata/packages.yaml` itself - most categories only ever populate
+`default` and one or two others).
 
 Per-user extras (`.chezmoidata/packages-<username>.yaml`, see "Per-user
 identity" above) share this exact same shape and get merged in - list

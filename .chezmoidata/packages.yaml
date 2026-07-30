@@ -1,8 +1,12 @@
 packages:
-  # Every category below shares the same shape: role bucket
-  # (default/server/non_server/gaming/non_gaming - "default" always
-  # applies, plus exactly one of each complementary pair depending on the
-  # machine's role) -> os (any-os/darwin/linux - "any-os" applies to both).
+  # Every category below shares the same shape: role bucket -> os. "default"
+  # always applies; the rest (server/gui/gaming/develop/work) are
+  # independent tags selected at `chezmoi init` (see .chezmoi.toml.tmpl,
+  # [data] roles) - a machine can have any combination, or none. Each
+  # bucket is a positive "install this when the tag is present" rule, no
+  # negation (e.g. what used to be "non_server" is now "gui": selected on
+  # every desktop machine instead of implied by the absence of "server").
+  # os is any-os/darwin/linux - "any-os" applies to both.
   # See .chezmoitemplates/{merged-packages,role-buckets,merged-package-list}
   # for how this gets merged with a per-user overlay and flattened.
   taps:
@@ -125,7 +129,7 @@ packages:
                                # client exists, see ZapZap flatpak below)
 
   flatpaks:   # Linux GUI apps (system-wide, from flathub)
-    non_server:           # installed on every Linux machine except the server
+    gui:                  # installed on every Linux machine with a desktop
       any-os:
         # --- dotfiles baseline (not from the old nix config) ---
         - org.videolan.VLC             # VLC media player
@@ -162,7 +166,7 @@ packages:
         # (com.nextcloud.desktopclient.nextcloud) doesn't integrate with Dolphin's
         # overlay icons. Layered instead via packages.rpm_ostree below, on hosts
         # that support it.
-    gaming:   # merged in only when role="gaming" (Bazzite)
+    gaming:   # merged in only when the "gaming" tag is selected (Bazzite)
       any-os:
         - app.xemu.xemu                        # original Xbox emulator
         - com.github.Matoking.protontricks      # Proton prefix helper for Steam games

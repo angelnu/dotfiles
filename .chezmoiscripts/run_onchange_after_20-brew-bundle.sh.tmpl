@@ -42,7 +42,7 @@ brew bundle install --file="$BREWFILE"
 # Extra flags opt in to non-formula package types. Verify the exact flag names
 # for your brew version with: brew bundle cleanup --help
 CLEANUP_FLAGS=(--file="$BREWFILE")
-{{ if and (eq .chezmoi.os "linux") (not .server) -}}
+{{ if and (eq .chezmoi.os "linux") (has "gui" (default list .roles)) -}}
 CLEANUP_FLAGS+=(--flatpak)
 {{ end -}}
 

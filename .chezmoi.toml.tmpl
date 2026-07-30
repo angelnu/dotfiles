@@ -1,6 +1,8 @@
 {{/* Prompted once per machine, stored in ~/.config/chezmoi/chezmoi.toml */}}
-{{/* mac vs. linux is detected from .chezmoi.os; "role" distinguishes headless servers and the gaming machine. */}}
-{{- $role := promptChoiceOnce . "role" "Machine role" (list "default" "server" "gaming") -}}
+{{/* mac vs. linux is detected from .chezmoi.os; "roles" are independent
+     tags (a machine can have any combination, or none) that further scope
+     packages.yaml - see .chezmoitemplates/role-buckets. */}}
+{{- $roles := promptMultichoiceOnce . "roles" "Machine tags (space to toggle, enter to confirm)" (list "server" "gui" "gaming" "develop" "work") (list) -}}
 
 {{/*
   The age identity must exist BEFORE chezmoi decrypts any encrypted_ files,
@@ -45,10 +47,8 @@ encryption = "age"
     recipient = {{ $identity.age_recipient | quote }}
 
 [data]
-    role = {{ $role | quote }}
+    roles = {{ $roles | toToml }}
     user = {{ .chezmoi.username | quote }}
-    server = {{ eq $role "server" }}
-    gaming = {{ eq $role "gaming" }}
     prune = true
 
 [diff]

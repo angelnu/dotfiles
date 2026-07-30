@@ -16,7 +16,7 @@ per_user_angel:
         # com.ktechpit.whatsie intentionally NOT here: already covered by the
         # shared common flatpak com.rtosta.zapzap.
         []
-    non_server:
+    gui:
       any-os:
         # --- everything from the old Bazzite gaming PC that isn't gaming-specific ---
         - cc.arduino.IDE2                # Arduino IDE
