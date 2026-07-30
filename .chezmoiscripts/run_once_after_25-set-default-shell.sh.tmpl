@@ -27,6 +27,13 @@ fi
 # Requires root to register a new shell; will prompt for your password.
 grep -qxF "$FISH" /etc/shells || echo "$FISH" | sudo tee -a /etc/shells >/dev/null
 
-# chsh prompts for your account password (not sudo).
-chsh -s "$FISH"
+# Change shell using chsh, usermod, or fail gracefully
+if command -v chsh >/dev/null 2>&1; then
+    chsh -s "$FISH"
+elif command -v usermod >/dev/null 2>&1; then
+    sudo usermod -s "$FISH" "$(id -un)"
+else
+    echo "==> Warning: Neither 'chsh' nor 'usermod' found. Cannot set default shell automatically." >&2
+fi
+
 echo "==> login shell set to $FISH (takes effect on next login)"
