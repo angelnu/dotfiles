@@ -34,6 +34,7 @@ elif command -v usermod >/dev/null 2>&1; then
     sudo usermod -s "$FISH" "$(id -un)"
 else
     echo "==> Warning: Neither 'chsh' nor 'usermod' found. Cannot set default shell automatically." >&2
+    exit 1
 fi
 
 echo "==> login shell set to $FISH (takes effect on next login)"
