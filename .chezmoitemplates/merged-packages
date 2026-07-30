@@ -1,14 +1,14 @@
 {{- /*
   Deep-merges .packages (.chezmoidata/packages.yaml) with the current
   user's packages-<username>.yaml overlay (key per_user_<username>), one
-  level at a time: category (taps/brews/casks/flatpaks/rpm_ostree) -> role
-  (default/server/non_server/gaming/non_gaming) -> os (any-os/darwin/linux).
-  List leaves are concatenated, not overridden - sprig's merge/
-  mergeOverwrite treat a list as atomic (one side's list replaces the
-  other's entirely), which would silently drop packages rather than
-  combine common + per-user. Fully generic: walks whatever keys are
-  actually present at each level, so a new category/role/os needs zero
-  template changes anywhere.
+  level at a time: role (default/server/gui/gaming/develop/work) ->
+  package type (taps/brews/casks/flatpaks/rpm_ostree) -> os
+  (any-os/darwin/linux). List leaves are concatenated, not overridden -
+  sprig's merge/mergeOverwrite treat a list as atomic (one side's list
+  replaces the other's entirely), which would silently drop packages
+  rather than combine common + per-user. Fully generic: walks whatever
+  keys are actually present at each level, so a new role/type/os needs
+  zero template changes anywhere.
 
   Called via `includeTemplate` (not `template` - that only writes output,
   it can't be captured into a variable) and the result parsed back with
@@ -25,19 +25,19 @@
 {{- $user := index . (printf "per_user_%s" .chezmoi.username) -}}
 {{- if not $user }}{{ $user = dict }}{{ end -}}
 {{- $merged := dict -}}
-{{- range $cat, $catVal := .packages -}}
-  {{- $userCat := index $user $cat -}}
-  {{- if not $userCat }}{{ $userCat = dict }}{{ end -}}
-  {{- $mergedCat := dict -}}
-  {{- range $role, $roleVal := $catVal -}}
-    {{- $userRole := index $userCat $role -}}
-    {{- if not $userRole }}{{ $userRole = dict }}{{ end -}}
-    {{- $mergedRole := dict -}}
-    {{- range $os, $osVal := $roleVal -}}
-      {{- $_ := set $mergedRole $os (concat $osVal (default list (index $userRole $os))) -}}
+{{- range $role, $roleVal := .packages -}}
+  {{- $userRole := index $user $role -}}
+  {{- if not $userRole }}{{ $userRole = dict }}{{ end -}}
+  {{- $mergedRole := dict -}}
+  {{- range $type, $typeVal := $roleVal -}}
+    {{- $userType := index $userRole $type -}}
+    {{- if not $userType }}{{ $userType = dict }}{{ end -}}
+    {{- $mergedType := dict -}}
+    {{- range $os, $osVal := $typeVal -}}
+      {{- $_ := set $mergedType $os (concat $osVal (default list (index $userType $os))) -}}
     {{- end -}}
-    {{- $_ := set $mergedCat $role $mergedRole -}}
+    {{- $_ := set $mergedRole $type $mergedType -}}
   {{- end -}}
-  {{- $_ := set $merged $cat $mergedCat -}}
+  {{- $_ := set $merged $role $mergedRole -}}
 {{- end -}}
 {{- $merged | toJson -}}

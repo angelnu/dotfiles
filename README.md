@@ -39,7 +39,7 @@ One repo for macOS and Linux machines (e.g. the dev server).
 - **Packages**: common list in `.chezmoidata/packages.yaml`, plus an optional
   per-user overlay in `.chezmoidata/packages-<username>.yaml` → both merged
   and rendered into a real `~/.config/homebrew/Brewfile` → applied with
-  `brew bundle` (formulae + casks on macOS, formulae + Flatpaks on Linux
+  `brew bundle` (formulae always; casks on macOS and Flatpaks on Linux only on
   machines tagged `gui`; rpm-ostree layered packages on Fedora Atomic hosts go
   through a separate script, see below)
 - **Secrets**: age-encrypted files committed to this repo (public); each
@@ -246,23 +246,21 @@ shape means and how it's merged/flattened):
 
 ```yaml
 per_user_someusername:
-  brews:
-    default:
+  default:
+    brews:
       any-os: []
       darwin: []
       linux: []
-  casks:
-    default:
+    casks:
       any-os: []
-  flatpaks:
-    gaming:            # only merged in when the "gaming" tag is selected -
-      any-os: []       # see angel's file for a real example
-  rpm_ostree: {}
+  gaming:              # only merged in when the "gaming" tag is selected -
+    flatpaks:          # see angel's file for a real example
+      any-os: []
 ```
 
 Merged on top of `packages.yaml`'s own lists (concatenated, not replaced)
 when rendering the Brewfile and the rpm-ostree script - see "Packages"
-below. A category/role/os you don't need can just be omitted entirely
+below. A role/type/os you don't need can just be omitted entirely
 (everything degrades gracefully to empty).
 
 ### Why some of this lives outside `.chezmoidata/`
@@ -314,25 +312,31 @@ you find more readable.
 
 ### Packages
 
-`.chezmoidata/packages.yaml` declares five categories - `taps`, `brews`,
-`casks`, `flatpaks`, `rpm_ostree` - and every one of them shares the exact
-same two-level shape: **role** bucket, then **os** bucket:
+`.chezmoidata/packages.yaml` is ordered **role** bucket, then **package
+type** (`taps`/`brews`/`casks`/`flatpaks`/`rpm_ostree`), then **os**:
 
 ```yaml
-brews:
-  default:          # always applies
+default:            # always applies
+  brews:
     any-os: []       # both darwin and linux
     darwin: []
     linux: []
-  server:            # only on a machine tagged "server"
+  taps:
     any-os: []
-  gui:               # only on a machine tagged "gui" (has a desktop)
+server:              # only on a machine tagged "server"
+  brews:
     any-os: []
-  gaming:            # only on a machine tagged "gaming"
+gui:                 # only on a machine tagged "gui" (has a desktop)
+  flatpaks:
     any-os: []
-  develop:           # only on a machine tagged "develop"
+gaming:              # only on a machine tagged "gaming"
+  flatpaks:
     any-os: []
-  work:              # only on a machine tagged "work"
+develop:             # only on a machine tagged "develop"
+  brews:
+    any-os: []
+work:                # only on a machine tagged "work"
+  brews:
     any-os: []
 ```
 
@@ -344,9 +348,11 @@ negation/complementary-pair concept (an earlier design had `non_server`/
 `non_gaming` for "everything except" - replaced by tagging every
 desktop-ish machine `gui` instead, since a positive "has a desktop" rule
 is simpler to reason about than an implicit "isn't the one exception").
-Any bucket you don't need can just be omitted (see
-`.chezmoidata/packages.yaml` itself - most categories only ever populate
-`default` and one or two others).
+A role you don't need can just be omitted entirely, and within a role, a
+package type you don't need for it too (see `.chezmoidata/packages.yaml`
+itself for real examples - e.g. `develop` populates `brews`/`casks`/
+`flatpaks` but not `taps`/`rpm_ostree`; `work` is currently an empty
+placeholder, `{}`, with nothing identified for it yet).
 
 Per-user extras (`.chezmoidata/packages-<username>.yaml`, see "Per-user
 identity" above) share this exact same shape and get merged in - list
@@ -355,21 +361,21 @@ is currently applying. Deleting a line there only uninstalls it for that
 one person, not everyone.
 
 All of that - merging `.packages` with the current user's overlay,
-figuring out which role buckets apply, flattening each category down to a
-plain list - happens once, in `.chezmoitemplates/resolved-packages`,
+figuring out which role buckets apply, flattening down to a plain list per
+package type - happens once, in `.chezmoitemplates/resolved-packages`,
 called via chezmoi's `includeTemplate` function (the only way to get a
 *value* back from a shared template; plain `template` only writes output).
 Consumers (`dot_config/homebrew/Brewfile.tmpl`, the rpm-ostree script
 below, and the brew-bundle script itself for its tap-trust step) call only
 that one partial and get back `{taps, brews, casks, flatpaks, rpm_ostree}`
-as plain flat lists - they never need to know anything about per-user
-overlays, roles, or OS scoping themselves. (That split is deliberate:
-`resolved-packages` composes three smaller internal partials -
-`merged-packages` for the deep-merge, `role-buckets` for which roles
-apply, `merged-package-list` to flatten one category - confirmed the hard
-way why this boundary matters: a script that reached into `.packages.taps`
-directly broke the moment taps became a nested role->os dict instead of a
-flat list.)
+as plain flat lists (all five keys always present, defaulting to `[]` even
+if no active role happens to mention that type) - they never need to know
+anything about per-user overlays, roles, or OS scoping themselves. (That
+split is deliberate: `resolved-packages` composes two smaller internal
+partials - `merged-packages` for the deep-merge, `role-buckets` for which
+roles apply - confirmed the hard way why this boundary matters: a script
+that reached into `.packages.taps` directly broke the moment the structure
+gained an extra level.)
 
 `brew bundle install` adds; `brew bundle cleanup --force` removes anything not
 declared in the rendered Brewfile. Both run from
