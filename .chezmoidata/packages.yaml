@@ -56,15 +56,15 @@ packages:
         - procps           # ps/top/free (GNU versions); mac already has native tools
         - keychain         # ssh-agent front-end; mac already covered by osxkeychain credential helper
 
+  gui:                  # installed on every machine with a desktop
     rpm_ostree:   # layered packages for rpm-ostree hosts (Fedora Atomic / Bazzite);
-                  # ignored on non-rpm-ostree hosts. See
+                  # ignored on non-rpm-ostree hosts, and only on a desktop
+                  # (nextcloud-client-dolphin needs Dolphin, a GUI app). See
                   # .chezmoiscripts/run_onchange_after_21-rpm-ostree.sh.tmpl
       any-os:
         - nextcloud-client
         - nextcloud-client-dolphin  # real Dolphin overlay-icon integration; the
                                     # flatpak can't provide this (sandboxed)
-
-  gui:                  # installed on every machine with a desktop
     casks:                # macOS GUI apps
       any-os:
         # --- dotfiles baseline (not from the old nix config) ---
@@ -112,8 +112,8 @@ packages:
                              # has no official Linux client
         # nextcloud-client intentionally NOT here: the flatpak
         # (com.nextcloud.desktopclient.nextcloud) doesn't integrate with Dolphin's
-        # overlay icons. Layered instead via the default rpm_ostree bucket above,
-        # on hosts that support it.
+        # overlay icons. Layered instead via the rpm_ostree bucket above (also
+        # under "gui"), on hosts that support it.
 
   gaming:   # merged in only when the "gaming" tag is selected (Bazzite)
     flatpaks:
