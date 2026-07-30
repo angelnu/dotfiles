@@ -344,14 +344,22 @@ leaves concatenated with the common ones, not replacing them - for whoever
 is currently applying. Deleting a line there only uninstalls it for that
 one person, not everyone.
 
-The merge (`.packages` + the current user's overlay) and the
-role/os-filtering down to a flat list are both implemented once, as shared
-`.chezmoitemplates/` partials (`merged-packages`, `role-buckets`,
-`merged-package-list`) called via chezmoi's `includeTemplate` function -
-the only way to get a *value* back from a shared template, since plain
-`template` only writes output. Used identically by both
-`dot_config/homebrew/Brewfile.tmpl` and the rpm-ostree script below, so
-there's one implementation of "what applies to this machine," not two.
+All of that - merging `.packages` with the current user's overlay,
+figuring out which role buckets apply, flattening each category down to a
+plain list - happens once, in `.chezmoitemplates/resolved-packages`,
+called via chezmoi's `includeTemplate` function (the only way to get a
+*value* back from a shared template; plain `template` only writes output).
+Consumers (`dot_config/homebrew/Brewfile.tmpl`, the rpm-ostree script
+below, and the brew-bundle script itself for its tap-trust step) call only
+that one partial and get back `{taps, brews, casks, flatpaks, rpm_ostree}`
+as plain flat lists - they never need to know anything about per-user
+overlays, roles, or OS scoping themselves. (That split is deliberate:
+`resolved-packages` composes three smaller internal partials -
+`merged-packages` for the deep-merge, `role-buckets` for which roles
+apply, `merged-package-list` to flatten one category - confirmed the hard
+way why this boundary matters: a script that reached into `.packages.taps`
+directly broke the moment taps became a nested role->os dict instead of a
+flat list.)
 
 `brew bundle install` adds; `brew bundle cleanup --force` removes anything not
 declared in the rendered Brewfile. Both run from

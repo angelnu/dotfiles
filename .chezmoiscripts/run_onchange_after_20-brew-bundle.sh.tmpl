@@ -10,7 +10,8 @@
 # per-user-only edit rendered into the Brewfile fine, but this script never
 # re-ran to actually `brew bundle install` it, since its own hash never
 # changed.
-# packages hash: {{ (dict "common" .packages "user" (index . (printf "per_user_%s" .chezmoi.username))) | toJson | sha256sum }}
+{{- $pkgs := (includeTemplate "resolved-packages" .) | fromJson }}
+# packages hash: {{ $pkgs | toJson | sha256sum }}
 set -euo pipefail
 
 BREWFILE="{{ .chezmoi.homeDir }}/.config/homebrew/Brewfile"
@@ -23,8 +24,14 @@ done
 # and trust them here, before `brew bundle install` gets to the formula
 # lines that need them - these are taps we declared ourselves in
 # packages.yaml, not arbitrary ones, so trust them automatically rather than
-# requiring a manual step per machine.
-{{ range .packages.taps -}}
+# requiring a manual step per machine. `$pkgs.taps` is the same resolved,
+# already-flattened list the Brewfile itself renders - this script doesn't
+# need to know anything about per-user overlays/roles/OS itself (used to
+# iterate `.packages.taps` directly - broke the moment that became a
+# nested role->os dict instead of a flat list, confirmed the hard way:
+# `range` over a dict yields its values, so `.` became a whole role's
+# sub-dict and `| quote` stringified it as `brew tap "map[any-os:[...]]"`).
+{{ range $pkgs.taps -}}
 brew tap {{ . | quote }}
 brew trust --tap {{ . | quote }}
 {{ end }}

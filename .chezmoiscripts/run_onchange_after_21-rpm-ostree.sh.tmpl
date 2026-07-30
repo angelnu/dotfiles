@@ -4,20 +4,19 @@
 # this user's packages-<username>.yaml overlay, filtered to this machine's
 # role) declares. Only runs on rpm-ostree hosts (Fedora Atomic / Bazzite) -
 # the template guard above renders this file empty everywhere else.
-# Re-runs whenever the applicable set changes. Merge/role-selection logic
-# is shared with dot_config/homebrew/Brewfile.tmpl - see .chezmoitemplates/
-# (merged-packages, role-buckets, merged-package-list).
-{{- $merged := (includeTemplate "merged-packages" .) | fromJson }}
-{{- $roleBuckets := (includeTemplate "role-buckets" .) | fromJson }}
-{{- $rpmOstree := (includeTemplate "merged-package-list" (dict "catDict" $merged.rpm_ostree "roleBuckets" $roleBuckets "os" .chezmoi.os)) | fromJson }}
-# rpm_ostree packages hash: {{ $rpmOstree | toJson | sha256sum }}
+# Re-runs whenever the applicable set changes. This script doesn't need to
+# know anything about per-user overlays/roles/OS itself - that's resolved
+# once in .chezmoitemplates/resolved-packages, shared with
+# dot_config/homebrew/Brewfile.tmpl.
+{{- $pkgs := (includeTemplate "resolved-packages" .) | fromJson }}
+# rpm_ostree packages hash: {{ $pkgs.rpm_ostree | toJson | sha256sum }}
 set -euo pipefail
 
 for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/bin/brew; do
     if [ -x "$b" ]; then eval "$("$b" shellenv)"; break; fi
 done
 
-DECLARED=({{ range $rpmOstree }}{{ . | quote }} {{ end }})
+DECLARED=({{ range $pkgs.rpm_ostree }}{{ . | quote }} {{ end }})
 mapfile -t CURRENT < <(rpm-ostree status --json | jq -r '.deployments[0]["requested-packages"][]?')
 
 TO_INSTALL=()

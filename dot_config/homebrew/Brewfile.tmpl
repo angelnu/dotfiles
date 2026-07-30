@@ -1,34 +1,26 @@
 {{- /*
   Rendered from .chezmoidata/packages.yaml — this file IS the desired
   state, merged with per-user extras from .chezmoidata/packages-<username>.yaml
-  (key per_user_<username>) if any exist for the current user, and
-  filtered down to what applies to this machine's role
-  (default/server/non_server/gaming/non_gaming) and OS.
-
-  The actual merge/role-selection logic lives in .chezmoitemplates/
-  (merged-packages, role-buckets, merged-package-list) - shared with
-  .chezmoiscripts/run_onchange_after_21-rpm-ostree.sh.tmpl, one
-  implementation instead of two.
+  and filtered down to what applies to this machine, via
+  .chezmoitemplates/resolved-packages (the single source of truth for
+  "what packages apply here" - shared with the brew-bundle and rpm-ostree
+  scripts, so this file doesn't need to know anything about per-user
+  overlays, roles, or OS scoping itself).
 */ -}}
-{{- $merged := (includeTemplate "merged-packages" .) | fromJson -}}
-{{- $roleBuckets := (includeTemplate "role-buckets" .) | fromJson -}}
-{{- $taps := (includeTemplate "merged-package-list" (dict "catDict" $merged.taps "roleBuckets" $roleBuckets "os" .chezmoi.os)) | fromJson -}}
-{{- range $taps }}
+{{- $pkgs := (includeTemplate "resolved-packages" .) | fromJson -}}
+{{- range $pkgs.taps }}
 tap "{{ . }}"
-{{ end -}}
-{{- $brews := (includeTemplate "merged-package-list" (dict "catDict" $merged.brews "roleBuckets" $roleBuckets "os" .chezmoi.os)) | fromJson }}
-{{ range $brews -}}
+{{ end }}
+{{ range $pkgs.brews -}}
 brew "{{ . }}"
 {{ end -}}
 {{- if eq .chezmoi.os "darwin" }}
-{{- $casks := (includeTemplate "merged-package-list" (dict "catDict" $merged.casks "roleBuckets" $roleBuckets "os" .chezmoi.os)) | fromJson }}
-{{ range $casks -}}
+{{ range $pkgs.casks -}}
 cask "{{ . }}"
 {{ end -}}
 {{- end }}
 {{- if eq .chezmoi.os "linux" }}
-{{- $flatpaks := (includeTemplate "merged-package-list" (dict "catDict" $merged.flatpaks "roleBuckets" $roleBuckets "os" .chezmoi.os)) | fromJson }}
-{{ range $flatpaks -}}
+{{ range $pkgs.flatpaks -}}
 flatpak "{{ . }}"
 {{ end -}}
 {{- end }}

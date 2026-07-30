@@ -1,0 +1,29 @@
+{{- /*
+  The single entry point for "what packages apply to this machine".
+  Consumers (dot_config/homebrew/Brewfile.tmpl, the brew-bundle and
+  rpm-ostree scripts) call ONLY this and get back plain flat lists per
+  category - they never need to know anything about per-user overlays,
+  roles, or OS scoping. That's entirely an authoring-time concern in
+  packages.yaml/packages-<username>.yaml, not something every consumer
+  should have to re-derive for itself (a real bug here otherwise: one
+  script iterated .packages.taps directly and broke the moment taps
+  became a nested role->os dict instead of a flat list).
+
+  Composes the lower-level partials - merged-packages (deep-merge with
+  the per-user overlay), role-buckets (which role keys apply to this
+  machine), merged-package-list (flatten one category down to a plain
+  list) - generically over whatever categories .packages actually has, so
+  a new category needs zero changes here either.
+
+  JSON-encoded {"taps": [...], "brews": [...], "casks": [...],
+  "flatpaks": [...], "rpm_ostree": [...]}; parse back with `fromJson`
+  after `includeTemplate`.
+*/ -}}
+{{- $merged := (includeTemplate "merged-packages" .) | fromJson -}}
+{{- $roleBuckets := (includeTemplate "role-buckets" .) | fromJson -}}
+{{- $resolved := dict -}}
+{{- range $cat, $catVal := $merged -}}
+  {{- $flat := (includeTemplate "merged-package-list" (dict "catDict" $catVal "roleBuckets" $roleBuckets "os" $.chezmoi.os)) | fromJson -}}
+  {{- $_ := set $resolved $cat $flat -}}
+{{- end -}}
+{{- $resolved | toJson -}}
