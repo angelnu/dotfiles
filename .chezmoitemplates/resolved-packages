@@ -17,15 +17,19 @@
   type's running total. Generic over whatever roles/types are actually
   present, so a new one needs zero template changes here.
 
-  JSON-encoded {"taps": [...], "brews": [...], "casks": [...],
+  JSON-encoded {"taps": [...], "brews": [...], "casks": [...], "mas": [...],
   "flatpaks": [...], "rpm_ostree": [...]}; parse back with `fromJson`
-  after `includeTemplate`. All five keys are always present (defaulting to
+  after `includeTemplate`. All six keys are always present (defaulting to
   an empty list) even if no active role bucket ever mentions that type -
   e.g. a headless machine (no "gui" tag) has no "flatpaks" anywhere in
   packages.yaml's role tree, but consumers use plain dot-notation
   (`$pkgs.flatpaks`) which errors on a genuinely missing map key - this
   guarantees it's always at least `[]`, confirmed the hard way (a
   role-less Linux "server" simulation crashed here before this existed).
+  `mas` entries are `{name, id}` dicts, not plain strings like the rest -
+  `brew bundle` needs both to install from the Mac App Store - but the
+  merge/flatten logic above doesn't care what a list's elements are, so
+  this needs no special handling anywhere in this file.
 */ -}}
 {{- $merged := (includeTemplate "merged-packages" .) | fromJson -}}
 {{- $roleBuckets := (includeTemplate "role-buckets" .) | fromJson -}}
@@ -42,7 +46,7 @@
     {{- end -}}
   {{- end -}}
 {{- end -}}
-{{- range list "taps" "brews" "casks" "flatpaks" "rpm_ostree" -}}
+{{- range list "taps" "brews" "casks" "mas" "flatpaks" "rpm_ostree" -}}
   {{- if not (index $resolved .) }}{{ $_ := set $resolved . list }}{{ end -}}
 {{- end -}}
 {{- $resolved | toJson -}}

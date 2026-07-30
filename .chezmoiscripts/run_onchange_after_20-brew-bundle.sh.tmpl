@@ -45,6 +45,9 @@ CLEANUP_FLAGS=(--file="$BREWFILE")
 {{ if and (eq .chezmoi.os "linux") (has "gui" (default list .roles)) -}}
 CLEANUP_FLAGS+=(--flatpak)
 {{ end -}}
+{{ if eq .chezmoi.os "darwin" -}}
+CLEANUP_FLAGS+=(--mas)
+{{ end -}}
 
 # Newer Homebrew versions (confirmed: 6.0.13) make `brew bundle cleanup`
 # (no --force) interactively prompt before removing anything, and exit 1 if

@@ -18,6 +18,9 @@ brew "{{ . }}"
 {{ range $pkgs.casks -}}
 cask "{{ . }}"
 {{ end -}}
+{{ range $pkgs.mas -}}
+mas "{{ .name }}", id: {{ .id }}
+{{ end -}}
 {{- end }}
 {{- if eq .chezmoi.os "linux" }}
 {{ range $pkgs.flatpaks -}}
