@@ -118,7 +118,7 @@ packages:
     non_server:           # installed on every Linux machine except the server
       # --- dotfiles baseline (not from the old nix config) ---
       - org.videolan.VLC             # VLC media player
-      - com.visualstudio.code        # VS Code editor
+      # - com.visualstudio.code        # VS Code editor
       - com.brave.Browser            # Brave browser
       - org.mozilla.thunderbird_esr  # email client
       - com.prusa3d.PrusaSlicer      # 3D printer slicer
