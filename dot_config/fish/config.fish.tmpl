@@ -8,5 +8,22 @@ for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/b
     end
 end
 
+{{- if eq .chezmoi.os "linux" }}
+# macOS has its own always-running launchd ssh-agent (SSH_AUTH_SOCK already
+# set for every session) - Linux doesn't, so nothing here connects to an
+# agent at all unless one is started first. `keychain` starts one (or
+# reuses an already-running one across shell sessions/tabs) and exports
+# SSH_AUTH_SOCK/SSH_AGENT_PID here - with no key names given, it only does
+# that agent bootstrap and doesn't try to load anything itself; `ssh-add`
+# below (using its own standard default names) handles loading whatever
+# keys are actually present, same as it already does on macOS. Without the
+# bootstrap here, git commit signing (gpg.format = ssh) silently fails on
+# Linux - confirmed the hard way, `ssh-add` has nothing to connect to
+# otherwise.
+if type -q keychain
+    SHELL=(which fish) keychain --quiet --eval | source
+end
+{{- end }}
+
 # Load default SSH keys into the agent on every shell start.
 ssh-add
