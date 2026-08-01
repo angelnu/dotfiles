@@ -49,7 +49,8 @@ packages:
         - openssh          # newer than the OS-bundled version
         - cairo            # 2D graphics library, dependency for some tools
         - ollama           # run/manage local LLMs
-        - direnv           # was "programs.direnv"; per-directory env loading
+        - direnv           # per-directory env loading
+        - qpdf             # merge/encrypt PDFs
       darwin:
         - mas
       linux:
@@ -102,7 +103,7 @@ packages:
         - com.prusa3d.PrusaSlicer      # 3D printer slicer
         - org.freecad.FreeCAD          # parametric 3D CAD
         - io.github.pwr_solaar.solaar    # Logitech peripherals manager
-        - org.kde.discover               # KDE software center
+        # - org.kde.discover               # KDE software center
         - org.kde.filelight              # disk usage visualizer
         - org.kde.gwenview               # image viewer
         - org.kde.haruna                 # video player
