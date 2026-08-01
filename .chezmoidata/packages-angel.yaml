@@ -30,3 +30,5 @@ per_user_angel:
         - it.mijorus.gearlever           # AppImage manager
         - org.gnome.design.IconLibrary   # GNOME icon browser for app design
         - org.kicad.KiCad                # PCB design suite
+        - io.gitlab.adhami3310.Impression  # Create boot ISOs 
+        - org.fedoraproject.MediaWriter  # Create Fedorea boot ISOs

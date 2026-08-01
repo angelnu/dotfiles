@@ -103,7 +103,7 @@ packages:
         - com.prusa3d.PrusaSlicer      # 3D printer slicer
         - org.freecad.FreeCAD          # parametric 3D CAD
         - io.github.pwr_solaar.solaar    # Logitech peripherals manager
-        # - org.kde.discover               # KDE software center
+        - org.kde.discover               # KDE software center
         - org.kde.filelight              # disk usage visualizer
         - org.kde.gwenview               # image viewer
         - org.kde.haruna                 # video player

@@ -1,5 +1,1 @@
-# ~/.profile only runs for login shells - source it here too so
-# interactive non-login bash (e.g. opening a bash subshell, most dev
-# container default shells) gets the same Homebrew/ssh-agent bootstrap.
-# See ~/.profile (dot_profile.tmpl) for the actual logic.
-[ -f "$HOME/.profile" ] && . "$HOME/.profile"
+[ -z "$FISH_STARTED" ] && [ -t 1 ] && FISH_STARTED=1 exec fish
