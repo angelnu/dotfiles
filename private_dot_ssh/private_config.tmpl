@@ -1,5 +1,20 @@
 {{- $me := index .identities .chezmoi.username -}}
 {{- $checkCasaCmd := "ping -c1 -W1 dev.lan" | quote -}}
+{{- /*
+  casa is special - it's the jump host everything else routes through when
+  off the home LAN - so it stays a literal block rather than folding it
+  into the generic map below; forcing that genuinely different case
+  through machinery built for the common case would make both harder to
+  read, not easier. Add a new "regular" machine (reachable directly by
+  its own hostname, jumping through casa otherwise) by adding an entry
+  here instead of copy-pasting a whole Host/Match block. "user" is
+  optional and defaults to the current chezmoi username; `index`, not
+  dot-notation, since dot errors on a key a given host's dict doesn't
+  define at all.
+*/ -}}
+{{- $hosts := dict
+    "nas" (dict "hostname" "nas.home.prod.angelnu.com" "user" $me.nas_user)
+-}}
 Host *
     AddKeysToAgent yes
     ForwardAgent yes
@@ -11,10 +26,11 @@ Host casa
 Match originalhost casa exec {{ $checkCasaCmd }}
     Port 22
     HostName dev.lan
-
-Host nas
+{{ range $host, $cfg := $hosts }}
+Host {{ $host }}
     Port 22
-    HostName nas.home.angelnu.com
-    User {{ $me.nas_user }}
-Match originalhost nas !exec {{ $checkCasaCmd }}
+    HostName {{ $cfg.hostname }}
+    User {{ default $.chezmoi.username (index $cfg "user") }}
+Match originalhost {{ $host }} !exec {{ $checkCasaCmd }}
     ProxyJump casa
+{{ end -}}
