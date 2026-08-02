@@ -1,0 +1,46 @@
+{{- $usersYaml := (include ".chezmoisecrets/users.yaml.age") | decrypt | fromYaml -}}
+{{- $me := index $usersYaml.users .chezmoi.username -}}
+{{- if and $me $me.nextcloud -}}
+#!/bin/bash
+# Reminds you (doesn't act) if a Nextcloud account isn't connected yet on
+# this machine - never runs Nextcloud itself, since that would be an
+# intrusive GUI launch during an unattended `chezmoi update` (e.g. the
+# daily auto-update timer). angelnu.com always applies; kvant.cloud only
+# on machines tagged "work".
+#
+# Detection is best-effort: the client's internal config format/location
+# isn't guaranteed stable across versions - confirmed the hard way that
+# macOS v33+ moved to a sandboxed Containers path, breaking the older
+# Application Support location, so this checks every known candidate
+# rather than trusting just one.
+set -euo pipefail
+
+CANDIDATES=(
+    "{{ .chezmoi.homeDir }}/Library/Application Support/Nextcloud/nextcloud.cfg"
+    "{{ .chezmoi.homeDir }}/Library/Containers/com.nextcloud.desktopclient/Data/Library/Preferences/Nextcloud/nextcloud.cfg"
+    "{{ .chezmoi.homeDir }}/.config/Nextcloud/nextcloud.cfg"
+)
+
+is_connected() {
+    local url="$1"
+    for f in "${CANDIDATES[@]}"; do
+        [ -f "$f" ] && grep -qF "$url" "$f" 2>/dev/null && return 0
+    done
+    return 1
+}
+
+{{- $accounts := dict "https://cloud.angelnu.com" $me.nextcloud.angelnu }}
+{{- if has "work" (default list .roles) }}
+{{- $_ := set $accounts "https://kvant.cloud" $me.nextcloud.kvant }}
+{{- end }}
+{{ range $url, $user := $accounts }}
+if ! is_connected {{ $url | quote }}; then
+    echo "==> Nextcloud account not connected: {{ $url }} ({{ $user }})"
+{{- if eq $.chezmoi.os "darwin" }}
+    echo "    Run: open -a Nextcloud --args --overrideserverurl {{ $url }}"
+{{- else }}
+    echo "    Run: nextcloud --overrideserverurl {{ $url }}"
+{{- end }}
+fi
+{{ end -}}
+{{- end -}}
