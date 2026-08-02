@@ -5,8 +5,10 @@
 # Reminds you (doesn't act) if a Nextcloud account isn't connected yet on
 # this machine - never runs Nextcloud itself, since that would be an
 # intrusive GUI launch during an unattended `chezmoi update` (e.g. the
-# daily auto-update timer). angelnu.com always applies; kvant.cloud only
-# on machines tagged "work".
+# daily auto-update timer). The personal server always applies; the work
+# server only on machines tagged "work". Server URLs live in the encrypted
+# users.yaml.age secret, not here, so they aren't public on GitHub for
+# script kiddies to scan for.
 #
 # Detection is best-effort: the client's internal config format/location
 # isn't guaranteed stable across versions - confirmed the hard way that
@@ -29,9 +31,9 @@ is_connected() {
     return 1
 }
 
-{{- $accounts := dict "https://cloud.angelnu.com" $me.nextcloud.angelnu }}
+{{- $accounts := dict $usersYaml.nextcloud_servers.angelnu $me.nextcloud.angelnu }}
 {{- if has "work" (default list .roles) }}
-{{- $_ := set $accounts "https://kvant.cloud" $me.nextcloud.kvant }}
+{{- $_ := set $accounts $usersYaml.nextcloud_servers.kvant $me.nextcloud.kvant }}
 {{- end }}
 {{ range $url, $user := $accounts }}
 if ! is_connected {{ $url | quote }}; then
