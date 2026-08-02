@@ -14,7 +14,14 @@
 */ -}}
 {{- $hosts := dict
     "nas" (dict "hostname" "nas.home.prod.angelnu.com" "user" $me.nas_user)
+    "okd-service" (dict "hostname" "192.168.5.250" "user" "ansible")
 -}}
+{{- /* pve1..pve6: same hostname-equals-alias, same root user - generate
+  rather than repeat 6 near-identical entries by hand. */ -}}
+{{- range $n := until 6 -}}
+  {{- $name := printf "pve%d" (add1 $n) -}}
+  {{- $_ := set $hosts $name (dict "hostname" $name "user" "root") -}}
+{{- end -}}
 Host *
     AddKeysToAgent yes
     ForwardAgent yes
