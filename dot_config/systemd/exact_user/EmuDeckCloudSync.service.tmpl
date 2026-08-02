@@ -1,0 +1,8 @@
+[Unit]
+Description=
+
+[Service]
+ExecStart=/bin/bash /home/{{ .chezmoi.username }}/.config/EmuDeck/backend//tools/cloudSync/cloud_sync_watcher.sh
+
+[Install]
+WantedBy=default.target

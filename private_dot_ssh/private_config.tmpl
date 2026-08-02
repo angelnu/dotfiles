@@ -1,0 +1,20 @@
+{{- $me := index .identities .chezmoi.username -}}
+{{- $checkCasaCmd := "ping -c1 -W1 dev.lan" | quote -}}
+Host *
+    AddKeysToAgent yes
+    ForwardAgent yes
+
+Host casa
+    Port 22322
+    HostName casa96.angelnu.com
+    User {{ .chezmoi.username }}
+Match originalhost casa exec {{ $checkCasaCmd }}
+    Port 22
+    HostName dev.lan
+
+Host nas
+    Port 22
+    HostName nas.home.angelnu.com
+    User {{ $me.nas_user }}
+Match originalhost nas !exec {{ $checkCasaCmd }}
+    ProxyJump casa
