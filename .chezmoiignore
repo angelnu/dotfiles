@@ -5,6 +5,9 @@ scripts/**
 {{ if ne .chezmoi.os "linux" }}
 .config/systemd/**
 {{ end }}
+{{ if has "gaming" (default list .roles) -}}
+.config/systemd/user/EmuDeckCloudSync.service
+{{ end -}}
 
 {{ if ne .chezmoi.username "angel" -}}
 .ssh/id_rsa
