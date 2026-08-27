@@ -218,7 +218,7 @@ packages:
         - com.getpostman.Postman     # API development GUI
         - com.jgraph.drawio.desktop  # diagramming tool
         - org.virt_manager.virt-manager  # libvirt/QEMU VM manager
-        - com.emqx.mqttx             # MQTT 5.0 desktop client
+        - com.emqx.MQTTX             # MQTT 5.0 desktop client
 
   work:   # merged in only when the "work" tag is selected
     mas:
