@@ -1,0 +1,16 @@
+#!/bin/bash
+# Same reasoning as modify_dot_bashrc: chezmoi only owns the first line
+# (auto-exec into fish for interactive sessions); Rancher Desktop's
+# installer also appends its own "MANAGED BY RANCHER DESKTOP ... DO NOT
+# EDIT" PATH block to ~/.profile, not just ~/.bashrc - confirmed the hard
+# way. A plain templated file reverted that block on every apply and
+# printed a "changed since chezmoi last wrote it" warning on every
+# `chezmoi update` - this modify_ script instead reads the file's current
+# content (stdin) and re-emits it verbatim after our own line, so
+# external appends survive untouched instead of fighting chezmoi forever.
+set -euo pipefail
+
+MANAGED_LINE='[ -z "$FISH_STARTED" ] && [ -t 1 ] && FISH_STARTED=1 exec fish'
+
+echo "$MANAGED_LINE"
+grep -vF "$MANAGED_LINE" || true
