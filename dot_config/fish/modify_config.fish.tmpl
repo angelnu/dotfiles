@@ -1,3 +1,22 @@
+#!/bin/bash
+# chezmoi owns the static block below (this file's own template content,
+# rendered before this script even runs since it's a modify_*.tmpl -
+# chezmoi templates first, then executes the result). Rancher Desktop's
+# installer additionally appends its own "MANAGED BY RANCHER DESKTOP"
+# PATH block directly to this file - confirmed the hard way: unlike
+# ~/.bashrc (see modify_dot_bashrc, same reasoning), it patches
+# config.fish directly rather than relying on fish sourcing an rc file it
+# doesn't have. A plain templated file reverted that block on every apply
+# and printed a "changed since chezmoi last wrote it" warning on every
+# `chezmoi update` - this modify_ script instead reads the file's current
+# content (stdin), pulls out Rancher's block if present, and re-appends
+# it after our own content so it survives untouched instead of fighting
+# chezmoi forever.
+set -euo pipefail
+
+RANCHER_BLOCK="$(sed -n '/^### MANAGED BY RANCHER DESKTOP START/,/^### MANAGED BY RANCHER DESKTOP END/p')"
+
+cat <<'CHEZMOI_MANAGED'
 # Homebrew environment (formulae/casks come from .chezmoidata/packages.yaml).
 # Runs for every fish invocation (login/non-login, interactive or not) -
 # same semantics as home-manager's old `programs.fish.shellInit`.
@@ -6,16 +25,6 @@ for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/b
         eval ($b shellenv fish)
         break
     end
-end
-
-# Rancher Desktop CLI tools (rdctl, docker/nerdctl/kubectl shims) live in
-# ~/.rd/bin - not covered by Homebrew shellenv above, and Rancher's own
-# installer only patches bash/zsh rc files (see modify_dot_bashrc), which
-# fish never sources. Runtime existence check instead of gating on
-# os/role, since it's simpler and self-adjusts if Rancher is ever
-# uninstalled.
-if test -d "$HOME/.rd/bin"
-    fish_add_path "$HOME/.rd/bin"
 end
 
 {{- if eq .chezmoi.os "linux" }}
@@ -37,3 +46,9 @@ end
 
 # Load default SSH keys into the agent on every shell start.
 ssh-add
+CHEZMOI_MANAGED
+
+if [ -n "$RANCHER_BLOCK" ]; then
+    echo
+    printf '%s\n' "$RANCHER_BLOCK"
+fi
