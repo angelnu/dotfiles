@@ -8,6 +8,16 @@ for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/b
     end
 end
 
+# Rancher Desktop CLI tools (rdctl, docker/nerdctl/kubectl shims) live in
+# ~/.rd/bin - not covered by Homebrew shellenv above, and Rancher's own
+# installer only patches bash/zsh rc files (see modify_dot_bashrc), which
+# fish never sources. Runtime existence check instead of gating on
+# os/role, since it's simpler and self-adjusts if Rancher is ever
+# uninstalled.
+if test -d "$HOME/.rd/bin"
+    fish_add_path "$HOME/.rd/bin"
+end
+
 {{- if eq .chezmoi.os "linux" }}
 # macOS has its own always-running launchd ssh-agent (SSH_AUTH_SOCK already
 # set for every session) - Linux doesn't, so nothing here connects to an

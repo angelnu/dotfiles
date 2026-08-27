@@ -1,1 +1,17 @@
-[ -z "$FISH_STARTED" ] && [ -t 1 ] && FISH_STARTED=1 exec fish
+#!/bin/bash
+# chezmoi only owns the first line of ~/.bashrc (auto-exec into fish for
+# interactive sessions) - other installers append their own blocks after it
+# (e.g. Rancher Desktop's "MANAGED BY RANCHER DESKTOP ... DO NOT EDIT"
+# PATH export, needed because that block only runs for non-interactive bash
+# invocations, the ones that skip the exec-fish line below and actually
+# reach it). A plain templated file would revert those appends on every
+# apply and print a "changed since chezmoi last wrote it" warning on every
+# `chezmoi update` - a modify_ script instead reads the file's current
+# content (stdin) and re-emits it verbatim after our own line, so external
+# appends survive untouched instead of fighting chezmoi forever.
+set -euo pipefail
+
+MANAGED_LINE='[ -z "$FISH_STARTED" ] && [ -t 1 ] && FISH_STARTED=1 exec fish'
+
+echo "$MANAGED_LINE"
+grep -vF "$MANAGED_LINE" || true
