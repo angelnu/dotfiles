@@ -20,7 +20,8 @@
   rather than repeat 6 near-identical entries by hand. */ -}}
 {{- range $n := until 6 -}}
   {{- $name := printf "pve%d" (add1 $n) -}}
-  {{- $_ := set $hosts $name (dict "hostname" $name "user" "root") -}}
+  {{- $checkCmd := printf "ping -c1 -W1 %s" $name | quote -}}
+  {{- $_ := set $hosts $name (dict "hostname" $name "user" "root" "checkCmd" $checkCmd ) -}}
 {{- end -}}
 Host *
     AddKeysToAgent yes
@@ -38,6 +39,6 @@ Host {{ $host }}
     Port 22
     HostName {{ $cfg.hostname }}
     User {{ default $.chezmoi.username (index $cfg "user") }}
-Match originalhost {{ $host }} !exec {{ $checkCasaCmd }}
+Match originalhost {{ $host }} !exec {{ dig "checkCmd" $checkCasaCmd $cfg  }}
     ProxyJump casa
 {{ end -}}

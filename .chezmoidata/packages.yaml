@@ -209,11 +209,16 @@ packages:
                                   # a cask); no Linux equivalent, so mac-only now.
         - rancher          # Rancher Desktop; container/Kubernetes management
         - utm              # QEMU-based VM UI
+        - mqttx            # MQTT 5.0 desktop client
+        - multipass        # Canonical's Ubuntu VM orchestrator; on Linux it's
+                           # distributed via snap, not flatpak - this repo
+                           # doesn't use snap, so mac-only for now.
     flatpaks:
       any-os:
         - com.getpostman.Postman     # API development GUI
         - com.jgraph.drawio.desktop  # diagramming tool
         - org.virt_manager.virt-manager  # libvirt/QEMU VM manager
+        - com.emqx.mqttx             # MQTT 5.0 desktop client
 
   work:   # merged in only when the "work" tag is selected
     mas:
