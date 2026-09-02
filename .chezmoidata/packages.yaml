@@ -175,6 +175,7 @@ packages:
         - wireguard-tools
         - podman
         - hashicorp/tap/vault     # HashiCorp Vault
+        - opencode         # AI coding agent, terminal-based (sst/opencode)
 
         # --- Python (was python3.withPackages in nix) ---
         - python3          # tracks Homebrew's current default python@X.Y
