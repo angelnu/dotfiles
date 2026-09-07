@@ -1,0 +1,33 @@
+#!/bin/bash
+# Same reasoning as modify_dot_bashrc.tmpl (see there): chezmoi owns the
+# static block below; Rancher Desktop's installer also appends its own
+# "MANAGED BY RANCHER DESKTOP ... DO NOT EDIT" PATH block directly to
+# ~/.profile, not just ~/.bashrc - confirmed the hard way, a separate
+# file, same fight. This modify_ script reads the file's current content
+# (stdin), pulls Rancher's block out if present, and re-appends it after
+# our own content so it survives untouched.
+{{- $usersYaml := (include ".chezmoisecrets/users.yaml.age") | decrypt | fromYaml -}}
+{{- $me := index $usersYaml.users .chezmoi.username -}}
+{{- $myEnv := index $me "env" -}}
+set -euo pipefail
+
+RANCHER_BLOCK="$(sed -n '/^### MANAGED BY RANCHER DESKTOP START/,/^### MANAGED BY RANCHER DESKTOP END/p')"
+
+cat <<'CHEZMOI_MANAGED'
+{{- if $myEnv }}
+# Secret environment variables, per-user, from the encrypted
+# .chezmoisecrets/users.yaml.age (see users.<name>.env) - edit with
+# scripts/edit-users-secret.sh. Values differ per user, never checked in
+# as plaintext. Hand-rolled single-quoting - see modify_dot_bashrc.tmpl
+# for why (sprig's `squote` doesn't escape an embedded quote at all).
+{{- range $k, $v := $myEnv }}
+export {{ $k }}='{{ $v | replace "'" "'\\''" }}'
+{{- end }}
+{{- end }}
+[ -z "$FISH_STARTED" ] && [ -t 1 ] && FISH_STARTED=1 exec fish
+CHEZMOI_MANAGED
+
+if [ -n "$RANCHER_BLOCK" ]; then
+    echo
+    printf '%s\n' "$RANCHER_BLOCK"
+fi

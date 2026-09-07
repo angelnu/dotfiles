@@ -1,0 +1,41 @@
+#!/bin/bash
+# chezmoi owns the static block below (this file's own template content,
+# rendered before this script even runs since it's a modify_*.tmpl -
+# chezmoi templates first, then executes the result). Rancher Desktop's
+# installer additionally appends its own "MANAGED BY RANCHER DESKTOP ...
+# DO NOT EDIT" PATH block directly to ~/.bashrc - confirmed the hard way
+# (same story as modify_config.fish.tmpl and modify_dot_profile.tmpl). A
+# plain templated file reverted that block on every apply and printed a
+# "changed since chezmoi last wrote it" warning on every `chezmoi update`
+# - this modify_ script instead reads the file's current content (stdin),
+# pulls Rancher's block out if present, and re-appends it after our own
+# content so it survives untouched instead of fighting chezmoi forever.
+{{- $usersYaml := (include ".chezmoisecrets/users.yaml.age") | decrypt | fromYaml -}}
+{{- $me := index $usersYaml.users .chezmoi.username -}}
+{{- $myEnv := index $me "env" -}}
+set -euo pipefail
+
+RANCHER_BLOCK="$(sed -n '/^### MANAGED BY RANCHER DESKTOP START/,/^### MANAGED BY RANCHER DESKTOP END/p')"
+
+cat <<'CHEZMOI_MANAGED'
+{{- if $myEnv }}
+# Secret environment variables, per-user, from the encrypted
+# .chezmoisecrets/users.yaml.age (see users.<name>.env) - edit with
+# scripts/edit-users-secret.sh. Values differ per user, never checked in
+# as plaintext. Hand-rolled single-quoting, not sprig's `squote` - it
+# doesn't escape an embedded quote at all (confirmed the hard way: it
+# emits ='it's-a-test', broken syntax). Bash has no backslash-escape
+# inside single quotes at all, so an embedded ' has to close the quote,
+# emit an escaped ' outside it, then reopen - the standard '\'' trick
+# (contrast with fish's backslash-based escape, modify_config.fish.tmpl).
+{{- range $k, $v := $myEnv }}
+export {{ $k }}='{{ $v | replace "'" "'\\''" }}'
+{{- end }}
+{{- end }}
+[ -z "$FISH_STARTED" ] && [ -t 1 ] && FISH_STARTED=1 exec fish
+CHEZMOI_MANAGED
+
+if [ -n "$RANCHER_BLOCK" ]; then
+    echo
+    printf '%s\n' "$RANCHER_BLOCK"
+fi
