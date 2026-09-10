@@ -94,6 +94,7 @@ packages:
         - signal              # private messenger
         - whatsapp            # official desktop client (mac-only; no official Linux
                                # client exists, see ZapZap flatpak below)
+        - moonlight            # GameStream client; streams from a Sunshine/GameStream host
     flatpaks:            # Linux GUI apps (system-wide, from flathub)
       any-os:
         # --- dotfiles baseline (not from the old nix config) ---
@@ -121,6 +122,8 @@ packages:
         - org.signal.Signal      # private messenger
         - com.rtosta.zapzap  # ZapZap; unofficial WhatsApp Web wrapper - WhatsApp
                              # has no official Linux client
+        - com.moonlight_stream.Moonlight  # GameStream client; streams from a
+                                           # Sunshine/GameStream host
         # nextcloud-client intentionally NOT here: the flatpak
         # (com.nextcloud.desktopclient.nextcloud) doesn't integrate with Dolphin's
         # overlay icons. Layered instead via the rpm_ostree bucket above (also
