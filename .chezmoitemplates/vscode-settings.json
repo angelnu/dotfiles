@@ -11,9 +11,7 @@
 {
   "python.jediEnabled": false,
   "remote.SSH.remotePlatform": {
-    "dev": "linux",
-    "192.168.10.138": "linux",
-    "192.168.2.77": "linux"
+    "dev": "linux"
   },
   "explorer.confirmDragAndDrop": false,
   "git.confirmSync": false,
@@ -113,20 +111,6 @@
   "docker.extension.enableComposeLanguageServer": false,
   "continue.enableConsole": true,
   "continue.syncConfig": true,
-  "continue.models": [
-    {
-      "title": "LiteLLM Proxy",
-      "provider": "openai",
-      "model": "autoload",
-      "apiBase": "https://litellm.yourdomain.com/v1"
-    }
-  ],
-  "continue.tabAutocompleteModel": {
-    "title": "LiteLLM Autocomplete",
-    "provider": "openai",
-    "model": "qwen2.5-coder",
-    "apiBase": "https://litellm.yourdomain.com/v1"
-  },
   "[dockercompose]": {
     "editor.insertSpaces": true,
     "editor.tabSize": 2,
