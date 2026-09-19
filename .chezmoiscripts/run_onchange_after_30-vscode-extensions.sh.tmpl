@@ -1,0 +1,50 @@
+{{- if has "develop" (default list .roles) -}}
+{{- $extensions := (includeTemplate "resolved-vscode-extensions" .) | fromJson -}}
+#!/bin/bash
+# Installs the declared VS Code extension set via `code --install-extension`
+# - the official CLI flag for this, not a hack (see .chezmoitemplates/
+# resolved-vscode-extensions for where the list comes from). Re-runs
+# whenever that resolved list changes (hash below) or this machine gains
+# the "develop" role for the first time - same trigger mechanism as
+# run_onchange_after_20-brew-bundle.sh.tmpl, see that file's header
+# comment for why the hash has to be of the *resolved* data, not the
+# template source text.
+#
+# Deliberately install-only, never uninstalls anything not declared here
+# - unlike brew bundle cleanup elsewhere in this repo. An extension
+# installed by hand to try something out shouldn't vanish on the next
+# `chezmoi update` just because it isn't in this list yet. Instead, this
+# prints anything installed-but-undeclared at the end so it's visible,
+# and pruning (if wanted) is a manual `code --uninstall-extension`.
+#
+# extensions hash: {{ $extensions | toJson | sha256sum }}
+set -euo pipefail
+
+CODE_BIN=""
+for b in code code-insiders; do
+    if command -v "$b" >/dev/null 2>&1; then CODE_BIN="$b"; break; fi
+done
+if [ -z "$CODE_BIN" ]; then
+    echo "==> code CLI not found on PATH yet (VS Code just installed? PATH not refreshed in this shell?) - skipping, will retry on the next run" >&2
+    exit 0
+fi
+
+DECLARED="$(cat <<'EXTENSIONS_EOF'
+{{ range $extensions }}{{ . }}
+{{ end -}}
+EXTENSIONS_EOF
+)"
+
+echo "==> Installing/upgrading declared VS Code extensions"
+while IFS= read -r ext; do
+    [ -z "$ext" ] && continue
+    "$CODE_BIN" --install-extension "$ext" >/dev/null
+done <<< "$DECLARED"
+
+INSTALLED="$("$CODE_BIN" --list-extensions)"
+EXTRA="$(comm -23 <(printf '%s\n' "$INSTALLED" | sort) <(printf '%s\n' "$DECLARED" | sort))"
+if [ -n "$EXTRA" ]; then
+    echo "==> Installed but not in the declared list (left alone, not removed):"
+    echo "$EXTRA" | sed 's/^/    /'
+fi
+{{- end -}}
