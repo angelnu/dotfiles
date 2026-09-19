@@ -15,3 +15,14 @@ scripts/**
 .ssh/ansible_rsa
 .ssh/ansible_rsa.pub
 {{ end -}}
+
+{{/* VS Code User settings.json lives at a different path per OS - only
+  one of these two targets actually applies on a given machine, the
+  other's source file (see .chezmoitemplates/vscode-settings.json for
+  the shared content) still exists but must never be applied there. */}}
+{{ if ne .chezmoi.os "darwin" -}}
+Library/Application Support/Code/User/settings.json
+{{ end -}}
+{{ if ne .chezmoi.os "linux" -}}
+.config/Code/User/settings.json
+{{ end -}}

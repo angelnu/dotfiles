@@ -1,0 +1,168 @@
+{{/* Shared VS Code User settings.json content, included from both OS
+  targets (Library/Application Support/Code/User/settings.json on mac,
+  .config/Code/User/settings.json on Linux - see .chezmoiignore for how
+  each machine only gets its own one). Was previously synced via VS
+  Code's own Settings Sync (Microsoft/GitHub account) - moved to
+  chezmoi instead, for privacy (no third-party account holding it) and
+  so update.mode below can actually stick without Sync overwriting it.
+  If you re-enable Settings Sync on any machine, it'll fight this file
+  the same way Rancher Desktop fought ~/.bashrc (see modify_dot_bashrc.tmpl)
+  - keep it off everywhere this is applied. */ -}}
+{
+  "python.jediEnabled": false,
+  "remote.SSH.remotePlatform": {
+    "dev": "linux",
+    "192.168.10.138": "linux",
+    "192.168.2.77": "linux"
+  },
+  "explorer.confirmDragAndDrop": false,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "git.autoRepositoryDetection": "openEditors",
+  "git.autorefresh": false,
+  "git.enableSmartCommit": true,
+  "C_Cpp.updateChannel": "Insiders",
+  "editor.suggestSelection": "first",
+  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+  "editor.minimap.enabled": false,
+  "redhat.telemetry.enabled": true,
+  "go.toolsManagement.autoUpdate": true,
+  "security.workspace.trust.untrustedFiles": "open",
+  "liveshare.joinDebugSessionOption": "Prompt",
+  "liveshare.autoShareTerminals": false,
+  "liveshare.anonymousGuestApproval": "reject",
+  "liveshare.showReadOnlyUsersInEditor": "always",
+  "liveshare.connectionMode": "relay",
+  "liveshare.openSharedServers": false,
+  "liveshare.shareExternalFiles": false,
+  "liveshare.increasedGuestLimit": false,
+  "liveshare.autoShareServers": false,
+  "liveshare.authenticationProvider": "Microsoft",
+  "vs-kubernetes": {
+    "vs-kubernetes.crd-code-completion": "disabled",
+    "vs-kubernetes.ignore-recommendations": true
+  },
+  "editor.largeFileOptimizations": false,
+  "[helm]": {},
+  "files.associations": {
+    "*.tpl": "gogo",
+    "kubeconfig": "yaml"
+  },
+  "workbench.colorTheme": "Visual Studio Dark - C++",
+  "vscode-kubernetes.log-viewer.follow": true,
+  "vscode-kubernetes.log-viewer.timestamp": false,
+  "vscode-kubernetes.log-viewer.since": -1,
+  "vscode-kubernetes.log-viewer.tail": -1,
+  "vscode-kubernetes.log-viewer.destination": "Terminal",
+  "vscode-kubernetes.log-viewer.wrap": true,
+  "vscode-openai.serviceProvider": "Azure-OpenAI",
+  "vscode-openai.baseUrl": "",
+  "vscode-openai.logLevel": "Debug",
+  "vscode-openai.defaultModel": "gpt-35-turbo",
+  "vscode-openai.azureDeployment": "gpt35-turbo-us-east",
+  "githubPullRequests.pullBranch": "never",
+  "cmake.configureOnOpen": true,
+  "terminal.integrated.enableMultiLinePasteWarning": false,
+  "hediet.vscode-drawio.resizeImages": null,
+  "files.autoSave": "onFocusChange",
+  "cmake.showOptionsMovedNotification": false,
+  "git.openRepositoryInParentFolders": "always",
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "diffEditor.ignoreTrimWhitespace": false,
+  "window.nativeTabs": true,
+  "cSpell.userWords": [
+    "aiohttp",
+    "hdrs",
+    "kvant",
+    "MQTT"
+  ],
+  "editor.accessibilitySupport": "off",
+  "remote.WSL.debug": true,
+  "dev.containers.executeInWSL": true,
+  "github.copilot.editor.enableAutoCompletions": true,
+  "githubPullRequests.fileListLayout": "flat",
+  "githubIssues.queries": [
+    {
+      "label": "Created Issues",
+      "query": "author:${user} state:open repo:${owner}/${repository} sort:created-desc"
+    },
+    {
+      "label": "Assigned Issues",
+      "query": "assignee:${user} state:open repo:${owner}/${repository} sort:created-desc"
+    },
+    {
+      "label": "Recent Issues",
+      "query": "state:open repo:${owner}/${repository} sort:updated-desc"
+    },
+    {
+      "label": "All my Issues (Open)",
+      "query": "is:open assignee:${user} sort:updated-desc"
+    },
+    {
+      "label": "thethingsnetwork",
+      "query": "is:open label:\"integration: thethingsnetwork\""
+    }
+  ],
+  "git.replaceTagsWhenPull": true,
+  "files.exclude": {
+    "**/__pycache__": true
+  },
+  "window.title": "${rootName}${separator}${profileName}",
+  "docker.extension.enableComposeLanguageServer": false,
+  "continue.enableConsole": true,
+  "continue.syncConfig": true,
+  "continue.models": [
+    {
+      "title": "LiteLLM Proxy",
+      "provider": "openai",
+      "model": "autoload",
+      "apiBase": "https://litellm.yourdomain.com/v1"
+    }
+  ],
+  "continue.tabAutocompleteModel": {
+    "title": "LiteLLM Autocomplete",
+    "provider": "openai",
+    "model": "qwen2.5-coder",
+    "apiBase": "https://litellm.yourdomain.com/v1"
+  },
+  "[dockercompose]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    },
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "editor.formatOnSave": true,
+  "terminal.integrated.suggest.enabled": false,
+  "chat.disableAIFeatures": true,
+  "yaml.schemas": {
+    {{- $arch := "linux-x64" -}}
+    {{- if eq .chezmoi.os "darwin" -}}
+      {{- $arch = "darwin-arm64" -}}
+    {{- end }}
+    "file://{{ .chezmoi.homeDir }}/.vscode/extensions/continue.continue-1.2.22-{{ $arch }}/config-yaml-schema.json": [
+      ".continue/**/*.yaml"
+    ],
+    "file://{{ .chezmoi.homeDir }}/.vscode/extensions/continue.continue-2.0.0-{{ $arch }}/config-yaml-schema.json": [
+      ".continue/**/*.yaml"
+    ]
+  },
+  "yaml.disableSchemaDetection": [
+    "**/.github/workflows/*.yml",
+    "**/.github/workflows/*.yaml",
+    "**/.gitea/workflows/*.yml",
+    "**/.gitea/workflows/*.yaml",
+    "**/.forgejo/workflows/*.yml",
+    "**/.forgejo/workflows/*.yaml"
+  ],
+  "update.mode": "manual"
+}
