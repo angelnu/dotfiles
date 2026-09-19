@@ -95,6 +95,9 @@ packages:
         - whatsapp            # official desktop client (mac-only; no official Linux
                                # client exists, see ZapZap flatpak below)
         - moonlight            # GameStream client; streams from a Sunshine/GameStream host
+        - logi-options+        # Logitech Options+; pairs/configures Logi Bolt receiver
+                                # devices (keyboard/mouse) - mac equivalent of solaar below,
+                                # which is Linux-only
     flatpaks:            # Linux GUI apps (system-wide, from flathub)
       any-os:
         # --- dotfiles baseline (not from the old nix config) ---
@@ -103,7 +106,9 @@ packages:
         - org.mozilla.thunderbird_esr  # email client
         - com.prusa3d.PrusaSlicer      # 3D printer slicer
         - org.freecad.FreeCAD          # parametric 3D CAD
-        - io.github.pwr_solaar.solaar    # Logitech peripherals manager
+        - io.github.pwr_solaar.solaar    # Logitech peripherals manager (Unifying/Bolt
+                                          # receivers); mac equivalent is logi-options+
+                                          # above, Linux-only here
         - org.kde.discover               # KDE software center
         - org.kde.filelight              # disk usage visualizer
         - org.kde.gwenview               # image viewer
