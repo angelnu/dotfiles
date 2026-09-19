@@ -228,6 +228,11 @@ packages:
         - com.jgraph.drawio.desktop  # diagramming tool
         - org.virt_manager.virt-manager  # libvirt/QEMU VM manager
         - com.emqx.MQTTX             # MQTT 5.0 desktop client
+    vscode_extensions:  # installed via `code --install-extension`, see
+                        # run_onchange_after_30-vscode-extensions.sh.tmpl -
+                        # always "any-os", an extension id is the same
+                        # everywhere that CLI flag runs
+      any-os: []
 
   work:   # merged in only when the "work" tag is selected
     mas:

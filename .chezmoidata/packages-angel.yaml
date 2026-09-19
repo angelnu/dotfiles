@@ -30,5 +30,105 @@ per_user_angel:
         - it.mijorus.gearlever           # AppImage manager
         - org.gnome.design.IconLibrary   # GNOME icon browser for app design
         - org.kicad.KiCad                # PCB design suite
-        - io.gitlab.adhami3310.Impression  # Create boot ISOs 
+        - io.gitlab.adhami3310.Impression  # Create boot ISOs
         - org.fedoraproject.MediaWriter  # Create Fedorea boot ISOs
+  develop:
+    vscode_extensions:
+      # Curated from `code --list-extensions` on Angel's MacBook Pro
+      # (2026-09-19) - continue.continue left out deliberately, no
+      # longer used.
+      any-os:
+        - 4ops.terraform
+        - adamvoss.vscode-languagetool
+        - adamvoss.vscode-languagetool-de
+        - adamvoss.vscode-languagetool-en
+        - adamvoss.vscode-languagetool-es
+        - albert.tabout
+        - alexnesnes.teleplot
+        - ambooth.git-rename
+        - batisteo.vscode-django
+        - bierner.markdown-mermaid
+        - bpruitt-goddard.mermaid-markdown-syntax-highlighting
+        - britesnow.vscode-toggle-quotes
+        - casualjim.gotemplate
+        - charliermarsh.ruff
+        - cschlosser.doxdocgen
+        - davidanson.vscode-markdownlint
+        - dbaeumer.vscode-eslint
+        - docker.docker
+        - donjayamanne.githistory
+        - donjayamanne.python-environment-manager
+        - donjayamanne.python-extension-pack
+        - dotjoshjohnson.xml
+        - drblury.protobuf-vsc
+        - editorconfig.editorconfig
+        - esbenp.prettier-vscode
+        - fcrespo82.markdown-table-formatter
+        - github.vscode-github-actions
+        - github.vscode-pull-request-github
+        - golang.go
+        - hediet.vscode-drawio
+        - janisdd.vscode-edit-csv
+        - jeff-hykin.better-cpp-syntax
+        - kevinrose.vsc-python-indent
+        - l13rary.l13-diff
+        - magicstack.magicpython
+        - mechatroner.rainbow-csv
+        - mhutchie.git-graph
+        - mikestead.dotenv
+        - mindaro-dev.file-downloader
+        - mitchdenny.ecdc
+        - mrmlnc.vscode-json5
+        - mrmlnc.vscode-scss
+        - ms-azuretools.vscode-containers
+        - ms-azuretools.vscode-docker
+        - ms-kubernetes-tools.vscode-aks-tools
+        - ms-kubernetes-tools.vscode-kubernetes-tools
+        - ms-python.debugpy
+        - ms-python.flake8
+        - ms-python.isort
+        - ms-python.mypy-type-checker
+        - ms-python.pylint
+        - ms-python.python
+        - ms-python.vscode-python-envs
+        - ms-toolsai.jupyter
+        - ms-toolsai.jupyter-keymap
+        - ms-toolsai.jupyter-renderers
+        - ms-toolsai.vscode-jupyter-cell-tags
+        - ms-toolsai.vscode-jupyter-slideshow
+        - ms-vscode-remote.remote-containers
+        - ms-vscode-remote.remote-ssh
+        - ms-vscode-remote.remote-ssh-edit
+        - ms-vscode-remote.remote-wsl
+        - ms-vscode.cmake-tools
+        - ms-vscode.cpp-devtools
+        - ms-vscode.cpptools
+        - ms-vscode.cpptools-extension-pack
+        - ms-vscode.cpptools-themes
+        - ms-vscode.hexeditor
+        - ms-vscode.makefile-tools
+        - ms-vscode.remote-explorer
+        - ms-vsliveshare.vsliveshare
+        - njpwerner.autodocstring
+        - openclustermanagement.ocm-vscode-extension
+        - pkief.material-icon-theme
+        - pratheeshrussell.kube-helper
+        - prisma.prisma
+        - rashwell.tcl
+        - rduldulao.py-coverage-view
+        - redhat.vscode-commons
+        - redhat.vscode-openshift-connector
+        - redhat.vscode-openshift-extension-pack
+        - redhat.vscode-redhat-account
+        - redhat.vscode-yaml
+        - sandipchitale.vscode-kubernetes-edit-kubeconfig
+        - shopify.ruby-lsp
+        - signageos.signageos-vscode-sops
+        - streetsidesoftware.code-spell-checker
+        - sygene.auto-correct
+        - tomoki1207.pdf
+        - tuxtina.json2yaml
+        - twxs.cmake
+        - wholroyd.jinja
+        - xembly.gomplate
+        - yzhang.markdown-all-in-one

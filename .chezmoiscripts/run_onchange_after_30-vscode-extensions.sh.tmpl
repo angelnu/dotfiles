@@ -1,11 +1,15 @@
-{{- if has "develop" (default list .roles) -}}
-{{- $extensions := (includeTemplate "resolved-vscode-extensions" .) | fromJson -}}
+{{- $extensions := ((includeTemplate "resolved-packages" .) | fromJson).vscode_extensions -}}
+{{- if $extensions -}}
 #!/bin/bash
 # Installs the declared VS Code extension set via `code --install-extension`
-# - the official CLI flag for this, not a hack (see .chezmoitemplates/
-# resolved-vscode-extensions for where the list comes from). Re-runs
-# whenever that resolved list changes (hash below) or this machine gains
-# the "develop" role for the first time - same trigger mechanism as
+# - the official CLI flag for this, not a hack. Extensions are declared
+# in packages.yaml/packages-<username>.yaml like any other package type
+# (see .chezmoitemplates/resolved-packages, the same entry point
+# run_onchange_after_20-brew-bundle.sh.tmpl uses) - no separate file or
+# template needed, since that machinery is already generic over "whatever
+# package types are present". Re-runs whenever the resolved list changes
+# (hash below) or this machine gains a role that declares any
+# vscode_extensions for the first time - same trigger mechanism as
 # run_onchange_after_20-brew-bundle.sh.tmpl, see that file's header
 # comment for why the hash has to be of the *resolved* data, not the
 # template source text.
