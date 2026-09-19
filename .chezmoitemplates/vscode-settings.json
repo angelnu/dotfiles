@@ -102,8 +102,6 @@
   },
   "window.title": "${rootName}${separator}${profileName}",
   "docker.extension.enableComposeLanguageServer": false,
-  "continue.enableConsole": true,
-  "continue.syncConfig": true,
   "[dockercompose]": {
     "editor.insertSpaces": true,
     "editor.tabSize": 2,
@@ -121,18 +119,6 @@
   "editor.formatOnSave": true,
   "terminal.integrated.suggest.enabled": false,
   "chat.disableAIFeatures": true,
-  "yaml.schemas": {
-    {{- $arch := "linux-x64" -}}
-    {{- if eq .chezmoi.os "darwin" -}}
-      {{- $arch = "darwin-arm64" -}}
-    {{- end }}
-    "file://{{ .chezmoi.homeDir }}/.vscode/extensions/continue.continue-1.2.22-{{ $arch }}/config-yaml-schema.json": [
-      ".continue/**/*.yaml"
-    ],
-    "file://{{ .chezmoi.homeDir }}/.vscode/extensions/continue.continue-2.0.0-{{ $arch }}/config-yaml-schema.json": [
-      ".continue/**/*.yaml"
-    ]
-  },
   "yaml.disableSchemaDetection": [
     "**/.github/workflows/*.yml",
     "**/.github/workflows/*.yaml",
