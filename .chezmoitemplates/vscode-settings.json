@@ -21,7 +21,6 @@
   "git.enableSmartCommit": true,
   "C_Cpp.updateChannel": "Insiders",
   "editor.suggestSelection": "first",
-  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
   "editor.minimap.enabled": false,
   "redhat.telemetry.enabled": true,
   "go.toolsManagement.autoUpdate": true,
@@ -41,7 +40,6 @@
     "vs-kubernetes.ignore-recommendations": true
   },
   "editor.largeFileOptimizations": false,
-  "[helm]": {},
   "files.associations": {
     "*.tpl": "gogo",
     "kubeconfig": "yaml"
@@ -53,11 +51,6 @@
   "vscode-kubernetes.log-viewer.tail": -1,
   "vscode-kubernetes.log-viewer.destination": "Terminal",
   "vscode-kubernetes.log-viewer.wrap": true,
-  "vscode-openai.serviceProvider": "Azure-OpenAI",
-  "vscode-openai.baseUrl": "",
-  "vscode-openai.logLevel": "Debug",
-  "vscode-openai.defaultModel": "gpt-35-turbo",
-  "vscode-openai.azureDeployment": "gpt35-turbo-us-east",
   "githubPullRequests.pullBranch": "never",
   "cmake.configureOnOpen": true,
   "terminal.integrated.enableMultiLinePasteWarning": false,
