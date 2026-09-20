@@ -16,6 +16,24 @@ set -euo pipefail
 
 BREWFILE="{{ .chezmoi.homeDir }}/.config/homebrew/Brewfile"
 
+{{ if eq .chezmoi.os "darwin" -}}
+# Several casks (Rancher Desktop, UTM, WireGuard...) run their own
+# privileged postinstall via a separate `sudo` call each - macOS's sudo
+# ticket normally expires after ~5 minutes idle, so a `brew bundle
+# install` with several such casks can prompt for the password more than
+# once if enough time passes between them. No `sudo -v` here - that would
+# force a password prompt even on a run where nothing actually needs
+# sudo, which is the common case. Instead this just silently keeps ALIVE
+# whatever ticket already exists (from whichever cask first needed one),
+# refreshing it every 60s in the background for the rest of this script,
+# so later casks reuse it instead of prompting again. `-n`
+# (non-interactive) means it never itself triggers a prompt - it silently
+# does nothing if there's no ticket yet.
+( while true; do sudo -n true 2>/dev/null; sleep 60; done ) &
+SUDO_KEEPALIVE_PID=$!
+trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null' EXIT
+{{ end -}}
+
 for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/bin/brew; do
     if [ -x "$b" ]; then eval "$("$b" shellenv)"; break; fi
 done
