@@ -1,0 +1,13 @@
+# Non-secret environment variables that apply only to angel, on top of
+# the common ones in env.yaml. Same plaintext/public caveat as that
+# file - secrets go in .chezmoisecrets/users.yaml.age instead.
+#
+# Key is env_per_user_angel, NOT per_user_angel - that name is already
+# taken by packages-angel.yaml for an entirely different (role -> package
+# type -> os) shape. chezmoi deep-merges every .chezmoidata/*.yaml file
+# into one combined tree, so reusing per_user_angel here would merge
+# straight into that structure instead of staying separate - confirmed
+# the hard way: it silently absorbed this file's content into
+# packages-angel.yaml's, making resolved-env return the wrong data
+# entirely with no error.
+env_per_user_angel: {}

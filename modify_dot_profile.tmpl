@@ -8,18 +8,21 @@
 # our own content so it survives untouched.
 {{- $usersYaml := (include ".chezmoisecrets/users.yaml.age") | decrypt | fromYaml -}}
 {{- $me := index $usersYaml.users .chezmoi.username -}}
-{{- $myEnv := index $me "env" -}}
+{{- $secretEnv := default dict (index $me "env") -}}
+{{- $plainEnv := (includeTemplate "resolved-env" .) | fromJson -}}
+{{- $myEnv := merge (dict) $secretEnv $plainEnv -}}
 set -euo pipefail
 
 RANCHER_BLOCK="$(sed -n '/^### MANAGED BY RANCHER DESKTOP START/,/^### MANAGED BY RANCHER DESKTOP END/p')"
 
 cat <<'CHEZMOI_MANAGED'
 {{- if $myEnv }}
-# Secret environment variables, per-user, from the encrypted
-# .chezmoisecrets/users.yaml.age (see users.<name>.env) - edit with
-# scripts/edit-users-secret.sh. Values differ per user, never checked in
-# as plaintext. Hand-rolled single-quoting - see modify_dot_bashrc.tmpl
-# for why (sprig's `squote` doesn't escape an embedded quote at all).
+# Environment variables, per-user: plain ones from .chezmoidata/env.yaml +
+# env-<name>.yaml (see .chezmoitemplates/resolved-env), secret ones from
+# the encrypted .chezmoisecrets/users.yaml.age (users.<name>.env, edit
+# with scripts/edit-users-secret.sh - secret wins on a name collision).
+# Hand-rolled single-quoting - see modify_dot_bashrc.tmpl for why
+# (sprig's `squote` doesn't escape an embedded quote at all).
 {{- range $k, $v := $myEnv }}
 export {{ $k }}='{{ $v | replace "'" "'\\''" }}'
 {{- end }}
