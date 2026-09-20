@@ -1,14 +1,10 @@
 {{- /*
-  Non-secret env vars for the current user: common (.chezmoidata/env.yaml,
-  key env) merged with this user's own overlay
-  (.chezmoidata/env-<username>.yaml, key env_per_user_<username> - NOT
-  per_user_<username>, see that file's own comment for why: chezmoi
-  deep-merges every .chezmoidata/*.yaml file into one combined tree, and
-  per_user_<username> is already taken by packages-<username>.yaml for
-  an unrelated role -> package type -> os shape) - per-user wins on a key
-  collision (confirmed: sprig's `merge $dst $src1 $src2` fills $dst from
-  $src1 first, then only fills whatever $src2 has that isn't already
-  set, so passing $user before $common makes $user win).
+  Non-secret env vars for the current user, from the single
+  .chezmoidata/env.yaml (key env: {common: {...}, users: {<name>: {...}}})
+  - common merged with this user's own entry under users, per-user
+  winning on a key collision (confirmed: sprig's `merge $dst $src1 $src2`
+  fills $dst from $src1 first, then only fills whatever $src2 has that
+  isn't already set, so passing $user before $common makes $user win).
 
   For SECRET env vars (API keys, tokens, anything that can't be plaintext
   in this public repo) use the per-user env in the encrypted
@@ -16,28 +12,29 @@
   modify_dot_profile.tmpl and dot_config/fish/modify_config.fish.tmpl,
   which merge both this and that into what actually gets exported.
 
-  `index`, not dot-notation, for both keys: dot errors on a genuinely
-  missing key (e.g. a user with no overlay file at all) instead of
-  returning nil like index does - same reason resolved-vscode-extensions
+  `index`, not dot-notation, throughout: dot errors on a genuinely
+  missing key (e.g. a user with no entry under `users` at all) instead
+  of returning nil like index does - same reason resolved-vscode-extensions
   used it (before that got folded into resolved-packages) and
   private_config.tmpl's own comment on this.
 
   A literal "$HOME" substring in any value is replaced with this
   machine's actual home directory before export - needed because
-  .chezmoidata/*.yaml files are NOT templates (confirmed the hard way:
-  a literal "{{"{{ .chezmoi.homeDir }}"}}" in one comes through
-  unrendered, so that syntax can't be used directly in env.yaml/
-  env-<username>.yaml), and the modify_ scripts single-quote every
-  exported value for safety (see modify_dot_bashrc.tmpl) which would
-  otherwise stop the shell from expanding a real $HOME itself at
-  runtime. Resolving it here instead means the final dotfile just
-  contains a plain literal path, no runtime expansion needed at all.
-  `$` inside `range`/`with` is chezmoi's own convention for reaching the
-  outer template context, unrelated to this shell-variable substitution.
+  .chezmoidata/*.yaml files are NOT templates (confirmed the hard way: a
+  literal "{{"{{ .chezmoi.homeDir }}"}}" in one comes through unrendered,
+  so that syntax can't be used directly in env.yaml), and the modify_
+  scripts single-quote every exported value for safety (see
+  modify_dot_bashrc.tmpl) which would otherwise stop the shell from
+  expanding a real $HOME itself at runtime. Resolving it here instead
+  means the final dotfile just contains a plain literal path, no runtime
+  expansion needed at all. `$` inside `range` is chezmoi's own convention
+  for reaching the outer template context, unrelated to this
+  shell-variable substitution.
 */ -}}
-{{- $common := default dict (index . "env") -}}
-{{- $userKey := printf "env_per_user_%s" .chezmoi.username -}}
-{{- $user := default dict (index . $userKey) -}}
+{{- $envData := default dict (index . "env") -}}
+{{- $common := default dict (index $envData "common") -}}
+{{- $allUsers := default dict (index $envData "users") -}}
+{{- $user := default dict (index $allUsers .chezmoi.username) -}}
 {{- $merged := merge (dict) $user $common -}}
 {{- $resolved := dict -}}
 {{- range $k, $v := $merged -}}
