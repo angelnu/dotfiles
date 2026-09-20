@@ -21,8 +21,26 @@
   returning nil like index does - same reason resolved-vscode-extensions
   used it (before that got folded into resolved-packages) and
   private_config.tmpl's own comment on this.
+
+  A literal "$HOME" substring in any value is replaced with this
+  machine's actual home directory before export - needed because
+  .chezmoidata/*.yaml files are NOT templates (confirmed the hard way:
+  a literal "{{"{{ .chezmoi.homeDir }}"}}" in one comes through
+  unrendered, so that syntax can't be used directly in env.yaml/
+  env-<username>.yaml), and the modify_ scripts single-quote every
+  exported value for safety (see modify_dot_bashrc.tmpl) which would
+  otherwise stop the shell from expanding a real $HOME itself at
+  runtime. Resolving it here instead means the final dotfile just
+  contains a plain literal path, no runtime expansion needed at all.
+  `$` inside `range`/`with` is chezmoi's own convention for reaching the
+  outer template context, unrelated to this shell-variable substitution.
 */ -}}
 {{- $common := default dict (index . "env") -}}
 {{- $userKey := printf "env_per_user_%s" .chezmoi.username -}}
 {{- $user := default dict (index . $userKey) -}}
-{{- merge (dict) $user $common | toJson -}}
+{{- $merged := merge (dict) $user $common -}}
+{{- $resolved := dict -}}
+{{- range $k, $v := $merged -}}
+  {{- $_ := set $resolved $k ($v | replace "$HOME" $.chezmoi.homeDir) -}}
+{{- end -}}
+{{- $resolved | toJson -}}
