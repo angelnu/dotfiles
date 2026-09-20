@@ -28,10 +28,17 @@ BREWFILE="{{ .chezmoi.homeDir }}/.config/homebrew/Brewfile"
 # refreshing it every 60s in the background for the rest of this script,
 # so later casks reuse it instead of prompting again. `-n`
 # (non-interactive) means it never itself triggers a prompt - it silently
-# does nothing if there's no ticket yet.
-( while true; do sudo -n true 2>/dev/null; sleep 60; done ) &
+# does nothing if there's no ticket yet. Both `|| true`s matter under
+# `set -e`, confirmed the hard way: `set -e` is inherited into the `(...)`
+# subshell, so without one there `sudo -n true` failing (the common case
+# - no ticket cached yet) would kill the whole loop after its very first
+# iteration; without the other, the trap's `kill` failing against an
+# already-dead PID would then make the *entire script* exit 1 even
+# though everything it actually did (brew bundle install, cleanup)
+# succeeded.
+( while true; do sudo -n true 2>/dev/null || true; sleep 60; done ) &
 SUDO_KEEPALIVE_PID=$!
-trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null' EXIT
+trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
 {{ end -}}
 
 for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/bin/brew; do
