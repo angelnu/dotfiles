@@ -1,0 +1,8 @@
+# Non-secret environment variables that apply only to mireille, on top
+# of the common ones in env.yaml. Same plaintext/public caveat as that
+# file - secrets go in .chezmoisecrets/users.yaml.age instead.
+#
+# Key is env_per_user_mireille, NOT per_user_mireille - see env-angel.yaml's
+# comment for why (that name is already taken by packages-mireille.yaml
+# for an unrelated shape).
+env_per_user_mireille: {}
