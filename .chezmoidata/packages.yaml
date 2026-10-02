@@ -233,6 +233,14 @@ packages:
                         # always "any-os", an extension id is the same
                         # everywhere that CLI flag runs
       any-os: []
+    npm_globals:        # installed via `npm install -g`, see
+                        # .chezmoiscripts/run_onchange_after_31-npm-globals.sh.tmpl -
+                        # always "any-os", an npm package name is the same
+                        # everywhere. Install-only, never uninstalls (same policy
+                        # as vscode_extensions).
+      any-os:
+        - "@tolgee/cli"  # Tolgee CLI, pairs with TOLGEE_API_URL/TOLGEE_API_KEY env
+                         # (quotes required: YAML reserves a leading @)
 
   work:   # merged in only when the "work" tag is selected
     mas:

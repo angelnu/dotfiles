@@ -1,0 +1,47 @@
+{{- $pkgs := ((includeTemplate "resolved-packages" .) | fromJson).npm_globals -}}
+{{- if $pkgs -}}
+#!/bin/bash
+# Installs the declared global npm packages via `npm install -g`. Packages
+# are declared in packages.yaml/packages-<username>.yaml like any other
+# package type (see .chezmoitemplates/resolved-packages, the same entry
+# point run_onchange_after_20-brew-bundle.sh.tmpl uses) - no separate file
+# needed, since that machinery is generic over "whatever package types are
+# present". Runs after brew-bundle (script 20), so `node`/`npm` from the
+# brews are already in place. Re-runs whenever the resolved list changes
+# (hash below) - same trigger mechanism as
+# run_onchange_after_30-vscode-extensions.sh.tmpl.
+#
+# Deliberately install/upgrade-only, never uninstalls anything not declared
+# here - same policy as vscode_extensions: a package installed by hand to
+# try something out shouldn't vanish on the next `chezmoi update`. Extras
+# are printed at the end instead, pruning is a manual `npm uninstall -g`.
+#
+# npm_globals hash: {{ $pkgs | toJson | sha256sum }}
+set -euo pipefail
+
+if ! command -v npm >/dev/null 2>&1; then
+    echo "==> npm not found on PATH yet (node just installed? PATH not refreshed in this shell?) - skipping, will retry on the next run" >&2
+    exit 0
+fi
+
+DECLARED="$(cat <<'NPM_GLOBALS_EOF'
+{{ range $pkgs }}{{ . }}
+{{ end -}}
+NPM_GLOBALS_EOF
+)"
+
+echo "==> Installing/upgrading declared global npm packages"
+while IFS= read -r pkg; do
+    [ -z "$pkg" ] && continue
+    npm install -g "$pkg" >/dev/null
+done <<< "$DECLARED"
+
+if command -v jq >/dev/null 2>&1; then
+    INSTALLED="$(npm ls -g --depth=0 --json 2>/dev/null | jq -r '.dependencies // {} | keys[]')"
+    EXTRA="$(comm -23 <(printf '%s\n' "$INSTALLED" | sort) <(printf '%s\n' "$DECLARED" | sort))"
+    if [ -n "$EXTRA" ]; then
+        echo "==> Globally installed but not in the declared list (left alone, not removed):"
+        echo "$EXTRA" | sed 's/^/    /'
+    fi
+fi
+{{- end -}}

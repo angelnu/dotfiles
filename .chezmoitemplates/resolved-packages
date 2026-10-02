@@ -18,8 +18,9 @@
   present, so a new one needs zero template changes here.
 
   JSON-encoded {"taps": [...], "brews": [...], "casks": [...], "mas": [...],
-  "flatpaks": [...], "rpm_ostree": [...], "vscode_extensions": [...]};
-  parse back with `fromJson` after `includeTemplate`. All seven keys are
+  "flatpaks": [...], "rpm_ostree": [...], "vscode_extensions": [...],
+  "npm_globals": [...]};
+  parse back with `fromJson` after `includeTemplate`. All eight keys are
   always present (defaulting to an empty list) even if no active role
   bucket ever mentions that type -
   e.g. a headless machine (no "gui" tag) has no "flatpaks" anywhere in
@@ -47,7 +48,7 @@
     {{- end -}}
   {{- end -}}
 {{- end -}}
-{{- range list "taps" "brews" "casks" "mas" "flatpaks" "rpm_ostree" "vscode_extensions" -}}
+{{- range list "taps" "brews" "casks" "mas" "flatpaks" "rpm_ostree" "vscode_extensions" "npm_globals" -}}
   {{- if not (index $resolved .) }}{{ $_ := set $resolved . list }}{{ end -}}
 {{- end -}}
 {{- $resolved | toJson -}}
