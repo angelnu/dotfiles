@@ -1,6 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-plugin-litellm@latest"],
+  "plugin": [
+    "opencode-plugin-litellm@latest"
+  ],
   "provider": {
     "litellm": {
       "npm": "@ai-sdk/openai-compatible",
@@ -8,6 +10,11 @@
       "options": {
         "baseURL": "https://maas.phoeniqs.com/v1",
         "apiKey": "{env:LITELLM_API_KEY}"
+      }
+    },
+    "anthropic": {
+      "options": {
+        "apiKey": "{env:ANTHROPIC_API_KEY}"
       }
     }
   }
