@@ -1,0 +1,70 @@
+{{- $pkgs := ((includeTemplate "resolved-packages" .) | fromJson).release_apps -}}
+{{- if $pkgs -}}
+#!/bin/bash
+# Installs the declared release-tarball apps from their GitHub releases.
+# Declared in packages.yaml/packages-<username>.yaml like any other package
+# type (see .chezmoitemplates/resolved-packages, the same entry point
+# run_onchange_after_20-brew-bundle.sh.tmpl uses). Exists because their brew
+# formulae can't be loaded by Homebrew 7.x at all (GoReleaser generates
+# `depends_on :macos => :os` outside an on_macos block, which brew >= 7
+# rejects at formula load - confirmed the hard way: `brew info` and
+# `brew install` both fail on cirruslabs/cli/tart), so brew bundle/brew
+# install can neither install nor upgrade them. Re-runs whenever the
+# resolved list changes (hash below) - same trigger mechanism as
+# run_onchange_after_31-npm-globals.sh.tmpl.
+#
+# Deliberately install/upgrade-only: never uninstalls anything not declared
+# here - same policy as npm_globals/vscode_extensions, a hand-installed
+# version shouldn't vanish on the next `chezmoi update`.
+#
+# Only darwin hosts do anything: every current entry is an Apple-Hardware
+# app (tart, softnet); Linux tarball entries would need their own handling
+# here.
+#
+# release_apps hash: {{ $pkgs | toJson | sha256sum }}
+set -euo pipefail
+
+{{ if eq .chezmoi.os "darwin" -}}
+LIBEXEC="/opt/homebrew/libexec"
+BIN_DIR="/opt/homebrew/bin"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+{{ range $pkgs -}}
+# --- {{ .name }} {{ .version }}
+NAME="{{ .name }}"
+VERSION="{{ .version }}"
+URL="{{ .url }}"
+BIN="{{ .bin }}"
+MODE="{{ .mode }}"
+MARKER="$LIBEXEC/.$NAME.version"
+
+if [ -f "$MARKER" ] && [ "$(cat "$MARKER")" = "$VERSION" ]; then
+    echo "==> $NAME $VERSION already installed, skipping"
+else
+    echo "==> Installing $NAME $VERSION"
+    curl -fsSL "$URL" -o "$TMP/$NAME.tar.gz"
+    tar -xzf "$TMP/$NAME.tar.gz" -C "$TMP"
+    if [ "$MODE" = "libexec" ]; then
+        # Same as the formula's `libexec.install Dir["*"]`: every tarball
+        # entry lands in $LIBEXEC (replacing same-named ones), and the CLI
+        # binary inside the .app bundle is symlinked into $BIN_DIR.
+        mkdir -p "$LIBEXEC"
+        for entry in "$TMP"/*; do
+            base="$(basename "$entry")"
+            if [ "$base" = "$NAME.tar.gz" ]; then continue; fi
+            rm -rf "$LIBEXEC/$base"
+            mv "$entry" "$LIBEXEC/$base"
+        done
+        ln -sf "$LIBEXEC/$BIN" "$BIN_DIR/$NAME"
+    else
+        # Same as the formula's `bin.install`: the binary goes straight
+        # into $BIN_DIR.
+        install -m 0755 "$TMP/$BIN" "$BIN_DIR/$NAME"
+    fi
+    echo "$VERSION" > "$MARKER"
+fi
+
+{{ end -}}
+{{ end -}}
+{{- end -}}

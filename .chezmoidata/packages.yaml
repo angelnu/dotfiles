@@ -222,6 +222,8 @@ packages:
         - multipass        # Canonical's Ubuntu VM orchestrator; on Linux it's
                            # distributed via snap, not flatpak - this repo
                            # doesn't use snap, so mac-only for now.
+        - opencode-desktop  # OpenCode Desktop; AI coding agent desktop client
+                            # (sst/opencode) - mac-only, no Linux equivalent
     flatpaks:
       any-os:
         - com.getpostman.Postman     # API development GUI
@@ -242,6 +244,30 @@ packages:
         - "@tolgee/cli"  # Tolgee CLI, pairs with TOLGEE_API_URL/TOLGEE_API_KEY env
                          # (quotes required: YAML reserves a leading @)
 
+    release_apps:       # installed from GitHub release tarballs via
+                        # run_onchange_after_32-release-apps.sh.tmpl - for
+                        # tools whose brew formula brew can't currently
+                        # load: tart's GoReleaser-generated formula
+                        # (cirruslabs/cli/tart) uses depends_on :macos =>
+                        # :ventura outside an on_macos block, which brew
+                        # >= 7 rejects at formula load, so brew can't
+                        # install or upgrade it. Move back to brews
+                        # if/when the tap regenerates with the new syntax.
+      any-os:
+        - name: tart
+          version: 2.32.1
+          url: https://github.com/cirruslabs/tart/releases/download/2.32.1/tart.tar.gz
+          bin: tart.app/Contents/MacOS/tart
+          mode: libexec        # formula's libexec.install Dir["*"]:
+                               # tarball entries land in /opt/homebrew/libexec,
+                               # bin symlinked from there
+        - name: softnet        # tart's networking dependency - same broken
+                               # formula pattern (depends_on :macos => :sequoia)
+          version: 0.19.0
+          url: https://github.com/cirruslabs/softnet/releases/download/0.19.0/softnet.tar.gz
+          bin: softnet
+          mode: bin            # formula's bin.install: binary goes straight
+                               # into /opt/homebrew/bin
   work:   # merged in only when the "work" tag is selected
     mas:
       any-os:
