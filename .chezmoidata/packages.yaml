@@ -271,10 +271,6 @@ packages:
     mas:
       any-os:
         # --- iWork ---
-        - name: Keynote
-          id: 409183694
-        - name: Pages
-          id: 409201541
         - name: Numbers
           id: 361304891
 
