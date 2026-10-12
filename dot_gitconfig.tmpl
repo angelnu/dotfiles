@@ -54,6 +54,17 @@
     # containers, where .gitconfig gets mounted/copied in but ~/.ssh does
     # not - signing there relies on the forwarded ssh-agent instead.
     signingKey = "{{ $signingKey }}"
+# Per-directory commit emails: everything under ~/code commits as work,
+# except ~/code/home (personal). These includeIf blocks sit AFTER the
+# [user] section (includes are processed in file order, so included values
+# override it), and the home rule must come AFTER the broader ~/code one
+# (later includes win). The .inc files render per user from the same vault
+# entry above; in dev containers they don't exist and git silently ignores
+# a missing include path, so the global [user] email applies there.
+[includeIf "gitdir:~/code/"]
+    path = ~/.config/git/work.inc
+[includeIf "gitdir:~/code/home/"]
+    path = ~/.config/git/personal.inc
 [init]
     defaultBranch = main
 [pull]

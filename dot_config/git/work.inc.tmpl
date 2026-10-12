@@ -1,0 +1,15 @@
+{{- /*
+  Work email for git commits, pulled in by .gitconfig's
+  [includeIf "gitdir:~/code/"] (see dot_gitconfig.tmpl) - everything under
+  ~/code commits as work, except ~/code/home (personal.inc). Rendered per
+  user from the same encrypted users.yaml.age entry .gitconfig's [user]
+  section reads, so this scales to every user without per-user files.
+*/ -}}
+{{- $usersYaml := (include ".chezmoisecrets/users.yaml.age") | decrypt | fromYaml -}}
+{{- $me := index $usersYaml.users .chezmoi.username -}}
+{{- $email := "" -}}
+{{- if $me -}}
+  {{- $email = $me.work_email -}}
+{{- end -}}
+[user]
+    email = {{ $email }}
