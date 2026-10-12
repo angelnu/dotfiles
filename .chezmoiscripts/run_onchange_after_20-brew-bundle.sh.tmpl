@@ -66,12 +66,17 @@ brew bundle install --file="$BREWFILE"
 # --- Destructive phase: remove anything NOT in the Brewfile ---
 # Extra flags opt in to non-formula package types. Verify the exact flag names
 # for your brew version with: brew bundle cleanup --help
+#
+# Deliberately NO --mas (confirmed the hard way): cleanup would uninstall any
+# mas app not in the Brewfile, and taking Office off the declaration (Word
+# lost its App Store receipt when Microsoft AutoUpdate replaced the bundle,
+# making mas treat it as not-installed) made cleanup purge Excel/PowerPoint/
+# Outlook/OneDrive on the next run. mas apps are install-only, never pruned
+# here - same policy as npm_globals/vscode_extensions; pruning one is a
+# manual `mas uninstall <id>`.
 CLEANUP_FLAGS=(--file="$BREWFILE")
 {{ if and (eq .chezmoi.os "linux") (has "gui" (default list .roles)) -}}
 CLEANUP_FLAGS+=(--flatpak)
-{{ end -}}
-{{ if eq .chezmoi.os "darwin" -}}
-CLEANUP_FLAGS+=(--mas)
 {{ end -}}
 
 # Newer Homebrew versions (confirmed: 6.0.13) make `brew bundle cleanup`

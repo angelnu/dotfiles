@@ -274,3 +274,18 @@ packages:
         - name: Numbers
           id: 361304891
 
+        # --- Microsoft Office --- (updates come from Microsoft AutoUpdate,
+        # which can leave the App Store index behind; mas/brew-bundle only
+        # provision here, they never uninstall - the brew-bundle script's
+        # cleanup no longer passes --mas)
+        - name: Microsoft Word
+          id: 462054704
+        - name: Microsoft Excel
+          id: 462058435
+        - name: Microsoft PowerPoint
+          id: 462062816
+        - name: Microsoft Outlook
+          id: 985367838
+        - name: OneDrive
+          id: 823766827
+
