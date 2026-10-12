@@ -86,7 +86,6 @@ packages:
         # --- Others ---
         - slack
         - discord
-        - openscad          # programmable 3D CAD
         - dosbox-x-app       # DOS emulator
         - wireshark-app       # network protocol analyzer
         - bitwarden          # password manager
