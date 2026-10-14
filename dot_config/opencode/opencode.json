@@ -20,18 +20,15 @@
   },
   "mcp": {
     "odoo": {
-      "type": "local",
-      "command": [
-        "uvx",
-        "mcp-server-odoo"
-      ],
+      "type": "remote",
+      "url": "https://mcp-odoo-d00053-mcps.pub.basel.kvant.cloud/mcp",
       "enabled": true,
-      "environment": {
-        "ODOO_URL": "https://odoo.phoenix-technologies.ch",
-        "ODOO_DB": "phoenix_technologies",
-        "ODOO_API_KEY": "{env:ODOO_API_KEY}",
-        "ODOO_USER": "{env:ODOO_USER}",
-        "ODOO_YOLO": "read"
+      "oauth": false,
+      "timeout": 30000,
+      "headers": {
+        "X-Odoo-Url": "https://odoo.phoenix-technologies.ch",
+        "X-Odoo-Db": "phoenix_technologies",
+        "X-Odoo-Api-Key": "{env:ODOO_API_KEY}"
       }
     }
   }
