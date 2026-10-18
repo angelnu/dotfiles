@@ -61,7 +61,35 @@ brew tap {{ . | quote }}
 brew trust --tap {{ . | quote }}
 {{ end }}
 echo "==> Installing/upgrading declared packages"
-brew bundle install --file="$BREWFILE"
+# mas entries can't install unattended (confirmed the hard way, 2026-10-18:
+# `mas install` on this macOS needs the App Store GUI + privileges - it
+# prints "sudo: a terminal is required" and fails, so `brew bundle install`
+# exited 1 and chezmoi ABORTED every remaining script after this one on
+# every single apply - including the LaunchAgent's daily update, which
+# never completed and left the update permanently red). Filter the mas
+# lines out of the bundle run and attempt each app individually instead:
+# installed ones are skipped, not-installed ones get one `mas install` try,
+# and a failure is a WARNING, never a failure of the whole update. mas apps
+# stay declared in the Brewfile (unchanged target) - they are install-only
+# per the cleanup policy below, and installing one stays a manual
+# `mas install <id>` (or one App Store click) whenever the human wants it.
+MAS_IDS="$(sed -n -E 's/^mas "[^"]*", id: ([0-9]+).*$/\1/p' "$BREWFILE")"
+grep -v '^mas ' "$BREWFILE" > "$BREWFILE.nomas"
+brew bundle install --file="$BREWFILE.nomas"
+rm -f "$BREWFILE.nomas"
+
+if [ -n "$MAS_IDS" ]; then
+    INSTALLED_IDS="$(mas list 2>/dev/null || true)"
+    for id in $MAS_IDS; do
+        if printf '%s\n' "$INSTALLED_IDS" | grep -qE "^${id}($| )"; then
+            echo "==> mas app $id already installed"
+        elif mas install "$id"; then
+            echo "==> mas app $id installed"
+        else
+            echo "==> WARNING: mas app $id not installed - needs the App Store GUI; run 'mas install $id' by hand" >&2
+        fi
+    done
+fi
 
 # --- Destructive phase: remove anything NOT in the Brewfile ---
 # Extra flags opt in to non-formula package types. Verify the exact flag names
