@@ -24,10 +24,30 @@ CANDIDATES=(
 )
 
 is_connected() {
-    local url="$1"
+    local url="$1" rc host cfg_verdict=""
+    host="${url#*://}"
     for f in "${CANDIDATES[@]}"; do
-        [ -f "$f" ] && grep -qF "$url" "$f" 2>/dev/null && return 0
+        [ -f "$f" ] || continue
+        grep -qF "$url" "$f" 2>/dev/null
+        rc=$?
+        if [ $rc -eq 0 ]; then return 0; fi
+        if [ $rc -eq 1 ]; then cfg_verdict="disconnected"; break; fi
+        # rc 2 = unreadable - try the next candidate
     done
+    # A readable cfg that lacks the URL is authoritative: not connected.
+    [ "$cfg_verdict" = "disconnected" ] && return 1
+    # Every cfg candidate was unreadable: macOS TCC protects other apps'
+    # containers from processes without Full Disk Access - confirmed the
+    # hard way 2026-10-18: client v34 keeps its nextcloud.cfg ONLY in
+    # ~/Library/Containers/com.nextcloud.desktopclient/ and -r, head and
+    # grep are ALL denied from a plain terminal AND from the LaunchAgent's
+    # unattended update, which made this reminder nag daily even though
+    # both accounts are configured. Fall back to the File Provider mounts:
+    # the v3+ client mounts each connected account under
+    # ~/Library/CloudStorage/ (readable, no TCC) - a mount named after the
+    # account's host is proof the account is set up.
+    [ -d "$HOME/Library/CloudStorage" ] || return 1
+    ls "$HOME/Library/CloudStorage" 2>/dev/null | grep -qF "$host" && return 0
     return 1
 }
 
