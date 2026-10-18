@@ -26,3 +26,11 @@ Library/Application Support/Code/User/settings.json
 {{ if ne .chezmoi.os "linux" -}}
 .config/Code/User/settings.json
 {{ end -}}
+
+{{/* The daily chezmoi update LaunchAgent is macOS-only: launchctl doesn't
+  exist elsewhere and the plist would be dead weight. The loader script
+  renders empty on other OSes (chezmoi skips empty scripts). */}}
+{{ if ne .chezmoi.os "darwin" -}}
+Library/LaunchAgents/com.chezmoi.update.plist
+.local/bin/chezmoi-update.sh
+{{ end -}}

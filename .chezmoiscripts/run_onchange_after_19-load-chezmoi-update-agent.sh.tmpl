@@ -1,0 +1,22 @@
+{{- if eq .chezmoi.os "darwin" -}}
+{{- $plistContent := include (print .chezmoi.sourceDir "/Library/LaunchAgents/com.chezmoi.update.plist") -}}
+#!/bin/bash
+# Bootstraps the daily chezmoi update LaunchAgent whenever it changes:
+# run_onchange fires when this script's rendered content changes, and the
+# plist checksum below is part of this script's content. chezmoi applies
+# the plist FILE, but launchd only picks a plist up on an explicit
+# bootstrap - without this, an edited schedule would keep running the old
+# one until the next login.
+# plist sha256: {{ $plistContent | sha256sum }}
+set -euo pipefail
+export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+LABEL="com.chezmoi.update"
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+DOMAIN="gui/$(id -u)"
+
+launchctl bootout "$DOMAIN/$LABEL" >/dev/null 2>&1 || true
+launchctl bootstrap "$DOMAIN" "$PLIST"
+launchctl enable "$DOMAIN/$LABEL" >/dev/null 2>&1 || true
+echo "==> LaunchAgent $LABEL bootstrapped (daily chezmoi update at 09:00)"
+{{- end -}}
