@@ -17,19 +17,5 @@
         "apiKey": "{env:ANTHROPIC_API_KEY}"
       }
     }
-  },
-  "mcp": {
-    "odoo": {
-      "type": "remote",
-      "url": "https://mcp-odoo-d00053-mcps.pub.basel.kvant.cloud/mcp",
-      "enabled": true,
-      "oauth": false,
-      "timeout": 30000,
-      "headers": {
-        "X-Odoo-Url": "https://odoo.phoenix-technologies.ch",
-        "X-Odoo-Db": "phoenix_technologies",
-        "X-Odoo-Api-Key": "{env:ODOO_API_KEY}"
-      }
-    }
   }
 }
