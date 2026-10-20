@@ -51,9 +51,9 @@ if ! git -C "$REPO" fetch --quiet origin 2>/dev/null; then
     exit 0
 fi
 
-# The `local` branch is GENERATED (sync-local pipeline overlay commits on
-# origin/local) - its truth is origin/local, not origin/main. Any other
-# branch still tracks origin/main.
+# The `local` branch is GENERATED (the sync-local pipeline force-pushes
+# overlay commits on origin/local, rewriting its history) - its truth is
+# origin/local, not origin/main. Any other branch still tracks origin/main.
 TARGET="origin/main"
 if [ "$BRANCH" = "local" ] && git -C "$REPO" rev-parse --verify --quiet origin/local >/dev/null 2>&1; then
     TARGET="origin/local"
@@ -64,6 +64,11 @@ if [ "$(git -C "$REPO" rev-parse HEAD)" = "$(git -C "$REPO" rev-parse "$TARGET")
 elif git -C "$REPO" merge-base --is-ancestor HEAD "$TARGET"; then
     git -C "$REPO" merge -q --ff-only "$TARGET"
     echo "==> opencode-phoeniqs-settings-local ($BRANCH): refreshed to $(git -C "$REPO" log --oneline -1)"
+elif [ "$TARGET" = "origin/local" ] && [ -z "$(git -C "$REPO" log --format=%s "$TARGET..HEAD" | grep -v '^pipeline: base-settings/local overlay')" ]; then
+    # the checkout only carries stale pipeline overlays - the pipeline
+    # rewrote the branch, so follow it (they are regenerated, not work)
+    git -C "$REPO" reset -q --hard "$TARGET"
+    echo "==> opencode-phoeniqs-settings-local ($BRANCH): reset to regenerated $TARGET ($(git -C "$REPO" log --oneline -1))"
 else
     echo "==> opencode-phoeniqs-settings-local ($BRANCH): diverged from $TARGET (local commits), leaving it alone"
 fi
