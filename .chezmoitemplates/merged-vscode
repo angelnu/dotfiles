@@ -1,0 +1,56 @@
+{{- /*
+  The single entry point for "what the VS Code User settings.json contains
+  for this user". Consumers (both OS targets -
+  Library/Application Support/Code/User/settings.json.tmpl and
+  .config/Code/User/settings.json.tmpl, see .chezmoiignore for how each
+  machine only gets its own one) call ONLY this and get back the final JSON -
+  they never need to know anything about the per-user overlay, which is
+  entirely an authoring-time concern here and in the data files.
+
+  Composes:
+  - .chezmoitemplates/vscode-settings.json - the shared base, PURE JSON,
+    parsed with `fromJson` (not `fromYaml`), so it must stay free of both
+    template syntax and comments;
+  - an optional .chezmoidata/vscode-<username>.yaml overlay (key
+    per_user_<username>, same convention as packages-<username>.yaml):
+    `settings` merged over the base with the user winning per key, `remove`
+    listing base keys to delete outright.
+    The merge is HAND-ROLLED, not sprig's `merge` - confirmed the hard way
+    (same lesson as .chezmoitemplates/merged-packages): sprig's merge
+    silently drops "zero" values, so a user's `false`/`[]`/`0` override
+    gets replaced by the base's non-empty value (redhat.telemetry.enabled:
+    false came out as the base's true) and the base's null-valued key
+    (hediet.vscode-drawio.resizeImages) vanished from everyone's output.
+    Here: every user key wins unconditionally, then base keys fill in only
+    where genuinely absent (hasKey), so false/[]/null survive on both sides.
+    Shallow merge: an overlay key replaces the base key wholesale, so
+    nested objects in an overlay must be complete.
+  A user with no overlay file gets the base as-is (nil -> dict, merged with
+  nothing). `index`, not dot-notation, for every possibly-missing key - dot
+  errors on a map that lacks the key entirely, `index` returns nil.
+
+  Output is `toPrettyJson`, which alphabetizes keys and re-indents: the
+  rendered settings.json keeps every value but is reformatted once, on the
+  next apply, for every user - cosmetic only (VS Code rewrites this file
+  itself whenever a setting changes, and JSON key order has no meaning).
+  Was previously synced via VS Code's own Settings Sync (Microsoft/GitHub
+  account) - moved to chezmoi instead, for privacy (no third-party account
+  holding it) and so update.mode can actually stick without Sync
+  overwriting it. If you re-enable Settings Sync on any machine, it'll
+  fight this file the same way Rancher Desktop fought ~/.bashrc (see
+  modify_dot_bashrc.tmpl) - keep it off everywhere this is applied.
+*/ -}}
+{{- $base := include ".chezmoitemplates/vscode-settings.json" | fromJson -}}
+{{- $perUser := index . (printf "per_user_%s" .chezmoi.username) -}}
+{{- if not $perUser }}{{ $perUser = dict }}{{ end -}}
+{{- $merged := dict -}}
+{{- range $k, $v := default dict (index $perUser "settings") -}}
+{{- $_ := set $merged $k $v -}}
+{{- end -}}
+{{- range $k, $v := $base -}}
+{{- if not (hasKey $merged $k) -}}{{- $_ := set $merged $k $v -}}{{- end -}}
+{{- end -}}
+{{- range $key := default list (index $perUser "remove") -}}
+{{- $_ := unset $merged $key -}}
+{{- end -}}
+{{- $merged | toPrettyJson }}{{ "\n" }}

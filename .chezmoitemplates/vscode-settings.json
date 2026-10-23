@@ -1,13 +1,3 @@
-{{/* Shared VS Code User settings.json content, included from both OS
-  targets (Library/Application Support/Code/User/settings.json on mac,
-  .config/Code/User/settings.json on Linux - see .chezmoiignore for how
-  each machine only gets its own one). Was previously synced via VS
-  Code's own Settings Sync (Microsoft/GitHub account) - moved to
-  chezmoi instead, for privacy (no third-party account holding it) and
-  so update.mode below can actually stick without Sync overwriting it.
-  If you re-enable Settings Sync on any machine, it'll fight this file
-  the same way Rancher Desktop fought ~/.bashrc (see modify_dot_bashrc.tmpl)
-  - keep it off everywhere this is applied. */ -}}
 {
   "python.jediEnabled": false,
   "remote.SSH.remotePlatform": {

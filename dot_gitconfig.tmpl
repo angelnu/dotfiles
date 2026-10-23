@@ -47,6 +47,16 @@
   {{- $privKey := include (printf ".chezmoisecrets/ssh/%s/id_ed25519.age" .chezmoi.username) | decrypt -}}
   {{- $signingKey = output "/bin/sh" "-c" "PATH=\"/opt/homebrew/bin:/opt/homebrew/sbin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\"; umask 077; f=$(mktemp); trap 'rm -f \"$f\"' EXIT; printf '%s\n' \"$1\" > \"$f\"; ssh-keygen -y -f \"$f\"" "sh" $privKey | trim -}}
 {{- end -}}
+{{- /*
+  The work root for the per-directory includeIf below is per user: angel's
+  repos live under ~/code (the layout the committed config was written
+  for), mireille's under ~/Workspace. A username gate keeps each user's
+  rendered .gitconfig pointing at their own root - no per-user files.
+*/ -}}
+{{- $workRoot := "~/code" -}}
+{{- if eq .chezmoi.username "mireille" -}}
+{{- $workRoot = "~/Workspace" -}}
+{{- end -}}
 [user]
     name = {{ $name }}
     email = {{ $email }}
@@ -54,16 +64,17 @@
     # containers, where .gitconfig gets mounted/copied in but ~/.ssh does
     # not - signing there relies on the forwarded ssh-agent instead.
     signingKey = "{{ $signingKey }}"
-# Per-directory commit emails: everything under ~/code commits as work,
-# except ~/code/home (personal). These includeIf blocks sit AFTER the
+# Per-directory commit emails: everything under the work root commits as
+# work, except <work root>/home (personal). The root is per user (see the
+# $workRoot assignment above). These includeIf blocks sit AFTER the
 # [user] section (includes are processed in file order, so included values
-# override it), and the home rule must come AFTER the broader ~/code one
+# override it), and the home rule must come AFTER the broader work-root one
 # (later includes win). The .inc files render per user from the same vault
 # entry above; in dev containers they don't exist and git silently ignores
 # a missing include path, so the global [user] email applies there.
-[includeIf "gitdir:~/code/"]
+[includeIf "gitdir:{{ $workRoot }}/"]
     path = ~/.config/git/work.inc
-[includeIf "gitdir:~/code/home/"]
+[includeIf "gitdir:{{ $workRoot }}/home/"]
     path = ~/.config/git/personal.inc
 [init]
     defaultBranch = main

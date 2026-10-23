@@ -42,6 +42,16 @@ One repo for macOS and Linux machines (e.g. the dev server).
   `brew bundle` (formulae always; casks on macOS and Flatpaks on Linux only on
   machines tagged `gui`; rpm-ostree layered packages on Fedora Atomic hosts go
   through a separate script, see below)
+- **VS Code User settings**: shared base in
+  `.chezmoitemplates/vscode-settings.json` (pure JSON), plus an optional
+  per-user overlay in `.chezmoidata/vscode-<username>.yaml` (`settings`
+  merged over the base per key, `remove` deleting base keys outright) →
+  merged by `.chezmoitemplates/merged-vscode` (hand-rolled merge, same
+  reason as merged-packages) into
+  `Library/Application Support/Code/User/settings.json` on macOS and
+  `.config/Code/User/settings.json` on Linux - one of the two per machine,
+  see `.chezmoiignore`. Was previously synced via VS Code's own Settings
+  Sync - keep that off everywhere this is applied.
 - **Secrets**: age-encrypted files committed to this repo (public); each
   person's age *private key* is the only secret outside git, never shared
   between people. Kept locally at `~/.config/sops/age/keys.txt` (same

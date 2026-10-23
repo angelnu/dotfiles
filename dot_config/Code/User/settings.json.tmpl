@@ -1,1 +1,5 @@
-{{- includeTemplate "vscode-settings.json" . -}}
+{{- /* VS Code User settings.json (Linux target) - content comes from
+  .chezmoitemplates/merged-vscode (shared base + per-user overlay).
+  Only one of the two OS targets applies on a given machine - see
+  .chezmoiignore. */ -}}
+{{- includeTemplate "merged-vscode" . -}}

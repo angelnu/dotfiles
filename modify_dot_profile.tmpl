@@ -27,7 +27,13 @@ cat <<'CHEZMOI_MANAGED'
 export {{ $k }}='{{ $v | replace "'" "'\\''" }}'
 {{- end }}
 {{- end }}
+{{- /* Fish auto-start is per user: angel wants interactive bash shells to
+  exec fish (committed behaviour), mireille opts out - bash sessions stay
+  bash. Username gate so each user gets their own behaviour from the one
+  template. */}}
+{{ if ne .chezmoi.username "mireille" -}}
 [ -z "$FISH_STARTED" ] && [ -t 1 ] && FISH_STARTED=1 exec fish
+{{- end }}
 CHEZMOI_MANAGED
 
 if [ -n "$RANCHER_BLOCK" ]; then

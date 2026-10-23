@@ -1,0 +1,74 @@
+# VS Code User-settings overrides that apply only to mireille, on top of the
+# shared base in .chezmoitemplates/vscode-settings.json. Same idea as
+# packages-<username>.yaml: one shared base + a per-user overlay file merged
+# by template machinery (.chezmoitemplates/merged-vscode), so Angel's
+# rendered settings.json keeps the committed base values untouched.
+#
+# Plaintext and public - only ever preferences here, never credentials.
+# Two keys, both optional:
+#
+#   remove:   base keys deleted outright for this user (sprig's merge can
+#             only add/override, it can never drop a key, so removals need
+#             this list)
+#   settings: keys merged over the base, this user winning per key.
+#             SHALLOW merge - a key here replaces the base key wholesale,
+#             so nested objects (files.associations,
+#             terminal.integrated.profiles.linux, ...) must be complete
+#             here, not just the entries that differ.
+#
+# A new user needs no entry here: no file/entry means the base applies
+# as-is (lookup returns nil, merged with nothing).
+per_user_mireille:
+  remove:
+    - "[json]"
+    - github.copilot.editor.enableAutoCompletions
+  settings:
+    git.autoRepositoryDetection: true
+    redhat.telemetry.enabled: false
+    files.associations:
+      "*.tpl": "gogo"
+      "kubeconfig": "yaml"
+      "*.log": "ansi"
+    workbench.colorTheme: "Visual Studio Light"
+    yaml.disableSchemaDetection: []
+    workbench.editor.enablePreview: false
+    debugpy.debugJustMyCode: false
+    editor.renderWhitespace: "all"
+    files.watcherExclude:
+      ".venv/**": true
+    flake8.args:
+      - "--max-line-length=120"
+    git-graph.maxDepthOfRepoSearch: 2
+    gitTreeCompare.diffMode: "full"
+    jupyter.widgetScriptSources:
+      - "jsdelivr.com"
+      - "unpkg.com"
+    markdownlint.config:
+      MD003:
+        style: "consistent"
+      MD004:
+        style: "dash"
+      MD025:
+        front_matter_title: ""
+    pylint.args:
+      - "--disable=C0116"
+      - "--max-line-length=120"
+    python.analysis.autoFormatStrings: true
+    python.analysis.inlayHints.callArgumentNames: "partial"
+    python.languageServer: "Pylance"
+    remote.autoForwardPortsSource: "hybrid"
+    terminal.integrated.defaultProfile.linux: "bash"
+    terminal.integrated.profiles.linux:
+      bash:
+        path: "/usr/bin/bash"
+      zsh:
+        path: "zsh"
+      fish:
+        path: "fish"
+      tmux:
+        path: "tmux"
+        icon: "terminal-tmux"
+      pwsh:
+        path: "pwsh"
+        icon: "terminal-powershell"
+    window.commandCenter: false

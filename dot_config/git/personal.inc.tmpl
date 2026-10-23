@@ -1,7 +1,8 @@
 {{- /*
   Personal email for git commits, pulled in by .gitconfig's
-  [includeIf "gitdir:~/code/home/"] (see dot_gitconfig.tmpl) - ~/code/home
-  overrides the broader ~/code work mapping, and this include must come
+  [includeIf "gitdir:<work-root>/home/"] (see dot_gitconfig.tmpl - the root
+  is per user, ~/code for angel, ~/Workspace for mireille) - <work root>/home
+  overrides the broader work-root mapping, and this include must come
   AFTER work.inc's in .gitconfig for that to win. Reads the same vault
   `email` field .gitconfig's global [user] section uses (the personal git
   identity), rendered per user, so this scales without per-user files.
