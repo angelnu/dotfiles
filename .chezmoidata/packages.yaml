@@ -182,7 +182,6 @@ packages:
         - wireguard-tools
         - podman
         - hashicorp/tap/vault     # HashiCorp Vault
-        - opencode         # AI coding agent, terminal-based (sst/opencode)
 
         # --- Python (was python3.withPackages in nix) ---
         - python3          # tracks Homebrew's current default python@X.Y
@@ -207,6 +206,12 @@ packages:
 
         # --- Go  ---
         - go
+      linux:
+        # macOS gets the desktop app instead (gui role -> opencode-desktop
+        # cask), so the terminal formula is only declared for Linux; the
+        # brew-bundle script removes a copy already installed on a machine
+        # that has the desktop.
+        - opencode         # AI coding agent, terminal-based (sst/opencode)
     casks:
       any-os:
         - visual-studio-code

@@ -91,6 +91,20 @@ if [ -n "$MAS_IDS" ]; then
     done
 fi
 
+{{ if eq .chezmoi.os "darwin" -}}
+# opencode-desktop (the GUI app from the gui role) supersedes the terminal
+# formula: on a machine that has the desktop, drop the brew `opencode`
+# formula. The formula is no longer declared for macOS in packages.yaml, so
+# this is the one-time removal of an already-installed copy (an uninstall
+# cannot be expressed as desired state). Guarded on the desktop actually
+# being present, and warning-only so a refusal never fails the update.
+if [ -d "/Applications/OpenCode.app" ] || brew list --cask opencode-desktop >/dev/null 2>&1; then
+    if brew list --formula opencode >/dev/null 2>&1; then
+        echo "==> opencode-desktop present - removing the superseded brew opencode formula"
+        brew uninstall opencode || echo "==> WARNING: could not uninstall the brew opencode formula" >&2
+    fi
+fi
+{{ end -}}
 # --- Destructive phase: remove anything NOT in the Brewfile ---
 # Extra flags opt in to non-formula package types. Verify the exact flag names
 # for your brew version with: brew bundle cleanup --help
