@@ -1,0 +1,21 @@
+#!/bin/sh
+# The OpenCode CLI ships inside the OpenCode Desktop app bundle: the
+# opencode-desktop cask only installs OpenCode.app, and on macOS no
+# Homebrew formula provides the `opencode` command any more
+# (.chezmoidata/packages.yaml declares the formula for Linux only). This
+# managed wrapper makes `opencode` work from every shell; the app
+# auto-updates in place, so the bundle path stays valid.
+#
+# macOS-only: ignored elsewhere (.chezmoiignore), where the brew formula
+# provides the command. ~/.local/bin is prepended to PATH by the shell
+# configs (modify_config.fish.tmpl, modify_dot_bashrc.tmpl,
+# modify_dot_profile.tmpl).
+CLI="/Applications/OpenCode.app/Contents/Resources/opencode-cli"
+
+if [ ! -x "$CLI" ]; then
+    echo "opencode: OpenCode Desktop CLI not found at $CLI" >&2
+    echo "opencode: install the app with: brew install --cask opencode-desktop" >&2
+    exit 127
+fi
+
+exec "$CLI" "$@"

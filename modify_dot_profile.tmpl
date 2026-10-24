@@ -16,6 +16,11 @@ set -euo pipefail
 RANCHER_BLOCK="$(sed -n '/^### MANAGED BY RANCHER DESKTOP START/,/^### MANAGED BY RANCHER DESKTOP END/p')"
 
 cat <<'CHEZMOI_MANAGED'
+{{- if eq .chezmoi.os "darwin" }}
+# ~/.local/bin holds chezmoi-managed commands (the OpenCode Desktop CLI
+# wrapper, .local/bin/opencode); it is not in macOS's default PATH.
+export PATH="$HOME/.local/bin:$PATH"
+{{- end }}
 {{- if $myEnv }}
 # Environment variables, per-user: plain ones from .chezmoidata/env.yaml +
 # env-<name>.yaml (see .chezmoitemplates/resolved-env), secret ones from

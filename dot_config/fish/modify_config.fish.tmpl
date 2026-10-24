@@ -32,6 +32,12 @@ for b in /opt/homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/brew /usr/local/b
     end
 end
 
+{{- if eq .chezmoi.os "darwin" }}
+# ~/.local/bin holds chezmoi-managed commands (the OpenCode Desktop CLI
+# wrapper, .local/bin/opencode); it is not in macOS's default PATH.
+set -gx PATH "$HOME/.local/bin" $PATH
+{{- end }}
+
 {{- if $myEnv }}
 # Environment variables, per-user: plain ones from .chezmoidata/env.yaml +
 # env-<name>.yaml (see .chezmoitemplates/resolved-env), secret ones from

@@ -34,3 +34,9 @@ Library/Application Support/Code/User/settings.json
 Library/LaunchAgents/com.chezmoi.update.plist
 .local/bin/chezmoi-update.sh
 {{ end -}}
+
+{{/* The opencode wrapper execs the macOS-only OpenCode Desktop app bundle
+  CLI; Linux gets the command from the brew formula (packages.yaml). */}}
+{{ if ne .chezmoi.os "darwin" -}}
+.local/bin/opencode
+{{ end -}}
