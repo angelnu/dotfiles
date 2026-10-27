@@ -57,6 +57,15 @@
 {{- if eq .chezmoi.username "mireille" -}}
 {{- $workRoot = "~/Workspace" -}}
 {{- end -}}
+{{- /*
+  pull.rebase is per user too: mireille wants merge-on-pull (keep history
+  as it happened; conflicts resolve in one merge commit instead of
+  re-playing local commits), angel keeps the rebase-on-pull default.
+*/ -}}
+{{- $pullRebase := "true" -}}
+{{- if eq .chezmoi.username "mireille" -}}
+{{- $pullRebase = "false" -}}
+{{- end -}}
 [user]
     name = {{ $name }}
     email = {{ $email }}
@@ -79,7 +88,9 @@
 [init]
     defaultBranch = main
 [pull]
-    rebase = true
+    # Merge on pull for mireille, rebase for angel (see the $pullRebase
+    # gate at the top - same per-user pattern as $workRoot).
+    rebase = {{ $pullRebase }}
 [rebase]
     autoStash = true
 [commit]
