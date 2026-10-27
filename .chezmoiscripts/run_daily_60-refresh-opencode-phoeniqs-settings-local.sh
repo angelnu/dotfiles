@@ -10,12 +10,18 @@
 # persistent state, and fires whenever `chezmoi update`/`apply` runs.
 #
 # Safety rules, in order:
-# - Uncommitted changes -> skip (never overwrite work; the skip shows up in
-#   the chezmoi update output).
+# - Uncommitted changes to tracked files -> skip (never overwrite work; the
+#   skip shows up in the chezmoi update output). Untracked files never count
+#   as changes: OPENCODE_CONFIG_DIR points into this checkout, so opencode
+#   itself drops runtime state into it (.opencode/cli.json) - counting those
+#   blocked the refresh permanently (found 2026-10-25, stuck since Oct 19).
 # - Fast-forward ONLY: local commits that diverge from the target branch
 #   are never rebased, merged or discarded - you get a notice instead, and
 #   rebase/merge by hand when you want them kept. This branch is exactly
 #   where local changes are meant to live.
+# - Untracked files are never deleted by a refresh: a fast-forward git
+#   refuses (untracked file in the way) is reported and skipped, and the
+#   stale-overlay reset only clobbers gitignored paths (runtime state).
 # - Fetch failures (offline, VPN down) skip silently instead of failing the
 #   whole chezmoi update - a daily refresh missing one day is fine, a red
 #   update every morning is not.
@@ -40,8 +46,9 @@ if [ ! -d "$REPO/.git" ]; then
     exit 0
 fi
 
-if [ -n "$(git -C "$REPO" status --porcelain)" ]; then
-    echo "==> opencode-phoeniqs-settings-local: uncommitted changes, skipping refresh"
+# Tracked-file changes only: untracked files here are runtime state, not work
+if [ -n "$(git -C "$REPO" status --porcelain --untracked-files=no)" ]; then
+    echo "==> opencode-phoeniqs-settings-local: uncommitted changes to tracked files, skipping refresh"
     exit 0
 fi
 
@@ -62,11 +69,26 @@ fi
 if [ "$(git -C "$REPO" rev-parse HEAD)" = "$(git -C "$REPO" rev-parse "$TARGET")" ]; then
     echo "==> opencode-phoeniqs-settings-local ($BRANCH): already up to date ($(git -C "$REPO" log --oneline -1))"
 elif git -C "$REPO" merge-base --is-ancestor HEAD "$TARGET"; then
-    git -C "$REPO" merge -q --ff-only "$TARGET"
-    echo "==> opencode-phoeniqs-settings-local ($BRANCH): refreshed to $(git -C "$REPO" log --oneline -1)"
+    # git refuses a merge that would overwrite an untracked file - under
+    # `set -e` that would turn the whole chezmoi update red, so catch it
+    if git -C "$REPO" merge -q --ff-only "$TARGET"; then
+        echo "==> opencode-phoeniqs-settings-local ($BRANCH): refreshed to $(git -C "$REPO" log --oneline -1)"
+    else
+        echo "==> opencode-phoeniqs-settings-local ($BRANCH): refresh blocked - git refused the merge (untracked file in the way?), leaving it alone"
+        exit 0
+    fi
 elif [ "$TARGET" = "origin/local" ] && [ -z "$(git -C "$REPO" log --format=%s "$TARGET..HEAD" | grep -v '^pipeline: base-settings/local overlay')" ]; then
     # the checkout only carries stale pipeline overlays - the pipeline
-    # rewrote the branch, so follow it (they are regenerated, not work)
+    # rewrote the branch, so follow it (they are regenerated, not work).
+    # git reset --hard silently DELETES untracked files sitting where the
+    # incoming tree writes a tracked file - only gitignored paths (runtime
+    # state) may be clobbered, everything else blocks the reset.
+    while IFS= read -r f; do
+        if [ -e "$REPO/$f" ] && [ -z "$(git -C "$REPO" ls-files -- "$f")" ] && ! git -C "$REPO" check-ignore -q "$f"; then
+            echo "==> opencode-phoeniqs-settings-local ($BRANCH): untracked file $f is in the way of the reset, leaving it alone"
+            exit 0
+        fi
+    done < <(git -C "$REPO" diff --name-only HEAD "$TARGET")
     git -C "$REPO" reset -q --hard "$TARGET"
     echo "==> opencode-phoeniqs-settings-local ($BRANCH): reset to regenerated $TARGET ($(git -C "$REPO" log --oneline -1))"
 else
