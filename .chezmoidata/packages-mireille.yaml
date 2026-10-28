@@ -1,7 +1,63 @@
 # Packages that apply only to mireille, on top of the common lists in
 # packages.yaml. Same shape (role -> package type -> os), see that file.
-# Empty placeholder - fill in as needed, e.g.:
-#   default:
-#     brews:
-#       any-os: [mongosh]
-per_user_mireille: {}
+per_user_mireille:
+  develop:
+    vscode_extensions:
+      # Curated from `code --list-extensions` on mireille's MacBook Pro
+      # (2026-10-28) - installed via run_onchange_after_30-vscode-extensions
+      # (install-only, never prunes undeclared extensions).
+      any-os:
+        - arturock.gitstash
+        - bbenoist.nix
+        - davidanson.vscode-markdownlint
+        - docker.docker
+        - donjayamanne.githistory
+        - donjayamanne.python-environment-manager
+        - iliazeus.vscode-ansi
+        - l13rary.l13-diff
+        - letmaik.git-tree-compare
+        - mechatroner.rainbow-csv
+        - medo64.render-crlf
+        - mhutchie.git-graph
+        - mohsen1.prettify-json
+        - ms-azuretools.vscode-containers
+        - ms-azuretools.vscode-docker
+        - ms-kubernetes-tools.vscode-kubernetes-tools
+        - ms-python.black-formatter
+        - ms-python.debugpy
+        - ms-python.flake8
+        - ms-python.mypy-type-checker
+        - ms-python.pylint
+        - ms-python.python
+        - ms-python.vscode-pylance
+        - ms-python.vscode-python-envs
+        - ms-toolsai.jupyter
+        - ms-toolsai.jupyter-keymap
+        - ms-toolsai.jupyter-renderers
+        - ms-toolsai.vscode-jupyter-cell-tags
+        - ms-toolsai.vscode-jupyter-slideshow
+        - ms-vscode-remote.remote-containers
+        - ms-vscode-remote.remote-ssh
+        - ms-vscode-remote.remote-ssh-edit
+        - ms-vscode.remote-explorer
+        - mutantdino.resourcemonitor
+        - njpwerner.autodocstring
+        - rangav.vscode-thunder-client
+        - redhat.java
+        - redhat.vscode-yaml
+        - shipitsmarter.sops-edit
+        - signageos.signageos-vscode-sops
+        - sonarsource.sonarlint-vscode
+        - sst-dev.opencode
+        - tomoki1207.pdf
+        - vscjava.migrate-java-to-azure
+        - vscjava.vscode-gradle
+        - vscjava.vscode-java-debug
+        - vscjava.vscode-java-dependency
+        - vscjava.vscode-java-pack
+        - vscjava.vscode-java-test
+        - vscjava.vscode-maven
+        - waderyan.gitblame
+        - yzhang.markdown-all-in-one
+        - zainchen.json
+        - zoocodeorganization.zoo-code
