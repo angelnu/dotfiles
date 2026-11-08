@@ -25,5 +25,9 @@
         "url": "https://ha.angelnu.com/api/mcp"
       }
     }
-  }
+  },
+  "instructions": [
+    "~/.config/opencode-phoeniqs-settings-local/.opencode/rules/*.md",
+    "~/.config/opencode-phoeniqs-settings-local/.opencode/rules/atlassian/*.md"
+  ]
 }
