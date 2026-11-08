@@ -17,5 +17,13 @@
         "apiKey": "{env:ANTHROPIC_API_KEY}"
       }
     }
+  },
+  "mcp": {
+    "servers": {
+      "home-assistant": {
+        "type": "remote",
+        "url": "https://ha.angelnu.com/api/mcp"
+      }
+    }
   }
 }
