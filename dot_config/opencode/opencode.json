@@ -1,5 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "~/.config/opencode-phoeniqs-settings-local/.opencode/rules/*.md",
+    "~/.config/opencode-phoeniqs-settings-local/.opencode/rules/atlassian/*.md"
+  ],
   "provider": {
     "anthropic": {
       "options": {

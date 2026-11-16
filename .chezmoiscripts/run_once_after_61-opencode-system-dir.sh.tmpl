@@ -1,0 +1,78 @@
+{{ if or (eq .chezmoi.os "darwin") (eq .chezmoi.os "linux") -}}
+#!/bin/bash
+# Symlinks the opencode system config directory (macOS:
+# /Library/Application Support/opencode, Linux: /etc/opencode) to the shared
+# Phoeniqs settings checkout at ~/.config/opencode-phoeniqs-settings-local
+# (kept fresh by run_daily_60-refresh-opencode-phoeniqs-settings-local), so
+# the shared agents, skills, commands, model and MCP servers load no matter
+# which directory opencode starts from. Replaces the
+# OPENCODE_CONFIG/OPENCODE_CONFIG_DIR env vars that used to be exported from
+# .chezmoidata/env.yaml (removed in commit df88348): opencode v2.2.6
+# redefined OPENCODE_CONFIG_DIR as the global config directory, so pointing
+# it at the checkout shadowed ~/.config/opencode entirely - the system dir
+# carries the same content without that collision.
+#
+# Needs root (the system dir is outside home): sudo prompts once during an
+# interactive apply. Unattended runs (the com.chezmoi.update LaunchAgent /
+# the systemd timer have no TTY) skip gracefully instead of failing the
+# whole update - same philosophy as the daily refresh's fetch-failure skip;
+# the next interactive apply creates the link.
+#
+# The rules (.opencode/rules/) do NOT come through here: the checkout's
+# opencode.json instructions globs are relative, and opencode searches
+# relative instruction globs from the workspace up to the project root, not
+# relative to the config file. The rules load from the ~-glob instructions
+# in dot_config/opencode/opencode.json instead (see there).
+set -uo pipefail
+
+TARGET="$HOME/.config/opencode-phoeniqs-settings-local"
+{{- if eq .chezmoi.os "darwin" }}
+SYSTEM_DIR="/Library/Application Support/opencode"
+{{- else }}
+SYSTEM_DIR="/etc/opencode"
+{{- end }}
+
+# Already correct - nothing to do.
+if [ -L "$SYSTEM_DIR" ] && [ "$(readlink "$SYSTEM_DIR")" = "$TARGET" ]; then
+    exit 0
+fi
+
+# Non-interactive (LaunchAgent / systemd timer): sudo cannot prompt. Skip
+# gracefully - a missing symlink is fixed by the next interactive apply, a
+# red update every morning is worse (same trade-off as the daily refresh).
+if [ ! -t 0 ] && [ ! -t 1 ]; then
+    echo "==> opencode system dir: non-interactive run, sudo unavailable - skipping;"
+    echo "    run 'chezmoi apply' in a terminal once to create $SYSTEM_DIR"
+    exit 0
+fi
+
+# A real directory there means opencode's system config is managed locally -
+# never clobber it (same safety rule as the Application Support symlinks
+# script: never destroy content we do not own). Needs manual resolution, so
+# this stays a visible failure instead of a silent skip.
+if [ -e "$SYSTEM_DIR" ] && [ ! -L "$SYSTEM_DIR" ]; then
+    echo "ERROR: $SYSTEM_DIR exists as a real directory - not touching it;" >&2
+    echo "       resolve manually, then re-run 'chezmoi apply'." >&2
+    exit 1
+fi
+
+# A symlink pointing somewhere else is a leftover from an earlier experiment
+# - it holds no content of its own, replace it.
+if [ -L "$SYSTEM_DIR" ]; then
+    echo "==> replacing stale symlink -> $(readlink "$SYSTEM_DIR")"
+    sudo rm -f "$SYSTEM_DIR"
+fi
+
+# The checkout is cloned by the daily refresh script; on a very first apply
+# it may not exist yet when this runs. The symlink is created anyway and
+# resolves as soon as the checkout lands.
+sudo mkdir -p "$(dirname "$SYSTEM_DIR")"
+sudo ln -s "$TARGET" "$SYSTEM_DIR"
+
+if [ ! -d "$TARGET" ]; then
+    echo "WARNING: $TARGET does not exist yet - the symlink resolves once the" >&2
+    echo "         daily refresh script clones the checkout (next 'chezmoi apply')." >&2
+fi
+
+echo "==> opencode system dir ready: $SYSTEM_DIR -> $TARGET"
+{{ end -}}

@@ -36,6 +36,27 @@ One repo for macOS and Linux machines (e.g. the dev server).
   directories first (refuses to finish for the affected one - leaves it
   as-is - if something with the same name already exists under `~/.config`,
   rather than risk clobbering it; the others still complete independently).
+- **opencode shared settings (Phoeniqs agents/rules/skills)**: a checkout of
+  `phoenix/opencode-agents` (`local` branch) at
+  `~/.config/opencode-phoeniqs-settings-local`, kept fresh by
+  `.chezmoiscripts/run_daily_60-refresh-opencode-phoeniqs-settings-local.sh`
+  (clones if missing, fast-forwards the current branch to its origin - never
+  overwrites uncommitted work; untracked files there are opencode runtime
+  state, not work). Loaded from every directory via the opencode system
+  config dir symlinked to the checkout
+  (`.chezmoiscripts/run_once_after_61-opencode-system-dir.sh.tmpl`:
+  `/etc/opencode`, macOS `/Library/Application Support/opencode`) - needs
+  root, so sudo prompts once during an interactive apply, and unattended
+  runs (the daily auto-update timer) skip gracefully. Replaces the
+  `OPENCODE_CONFIG`/`OPENCODE_CONFIG_DIR` env vars, which were removed
+  (commit df88348) because opencode v2.2.6 redefined `OPENCODE_CONFIG_DIR`
+  as the global config directory that shadowed `~/.config/opencode`
+  entirely. The system dir carries `opencode.json`, `agents/`, `skills/`,
+  `commands/` and `plugins/` (the checkout's root symlinks into
+  `.opencode/`, phoenix/opencode-agents#40); the rules come from the
+  ~-glob `instructions` in `dot_config/opencode/opencode.json`, since
+  opencode searches relative instruction globs from the workspace up to the
+  project root and would never find them in another project.
 - **Packages**: common list in `.chezmoidata/packages.yaml`, plus an optional
   per-user overlay in `.chezmoidata/packages-<username>.yaml` → both merged
   and rendered into a real `~/.config/homebrew/Brewfile` → applied with

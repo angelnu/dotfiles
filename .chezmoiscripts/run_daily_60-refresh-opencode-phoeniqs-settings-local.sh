@@ -1,7 +1,8 @@
 #!/bin/bash
 # Keeps the extra opencode-agents (shared Phoeniqs settings: rules, skills,
 # agents) checkout at ~/.config/opencode-phoeniqs-settings-local fresh -
-# OPENCODE_CONFIG/OPENCODE_CONFIG_DIR point there (see .chezmoidata/env.yaml),
+# the opencode system config dir (run_once_after_61-opencode-system-dir)
+# symlinks there (/etc/opencode, macOS /Library/Application Support/opencode),
 # so a stale checkout would silently run yesterday's rules and skills.
 # Clones it if missing, otherwise fast-forwards the current branch to its
 # truth: origin/local for the generated `local` branch (the sync-local
@@ -12,7 +13,7 @@
 # Safety rules, in order:
 # - Uncommitted changes to tracked files -> skip (never overwrite work; the
 #   skip shows up in the chezmoi update output). Untracked files never count
-#   as changes: OPENCODE_CONFIG_DIR points into this checkout, so opencode
+#   as changes: the system-dir symlink points into this checkout, so opencode
 #   itself drops runtime state into it (.opencode/cli.json) - counting those
 #   blocked the refresh permanently (found 2026-10-25, stuck since Oct 19).
 # - Fast-forward ONLY: local commits that diverge from the target branch
