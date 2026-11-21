@@ -53,6 +53,13 @@ set -gx {{ $k }} '{{ $v | replace "\\" "\\\\" | replace "'" "\\'" }}'
 {{- end }}
 {{- end }}
 
+# Home-lab service URLs, composed from the single secret HOME_DOMAIN (the
+# domain itself lives only in the encrypted users.yaml.age, never in this
+# repo) - one secret variable feeds every home hostname.
+if set -q HOME_DOMAIN
+    set -gx HOME_ASSISTANT_MCP_URL "https://ha.$HOME_DOMAIN/api/mcp"
+end
+
 {{- if eq .chezmoi.os "linux" }}
 # macOS has its own always-running launchd ssh-agent (SSH_AUTH_SOCK already
 # set for every session) - Linux doesn't, so nothing here connects to an

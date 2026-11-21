@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "~/.config/opencode-phoeniqs-settings-local/.opencode/rules/*.md",
+    "~/.config/opencode-phoeniqs-settings-local/.opencode/rules/atlassian/*.md"
+  ],
+  "provider": {
+    "anthropic": {
+      "options": {
+        "apiKey": "{env:ANTHROPIC_API_KEY}"
+      }
+    }
+  }{{- /*
+    home-assistant MCP server: the URL carries the personal domain, so it
+    lives ONLY in the encrypted .chezmoisecrets/users.yaml.age
+    (users.<name>.env.HOME_DOMAIN - exported by config.fish/.bashrc/.profile,
+    which composes HOME_ASSISTANT_MCP_URL from it). Neither this public repo
+    nor the applied file contains the domain: this config references the
+    composed variable via OpenCode's {env:VAR} substitution. Block emitted
+    only for users whose secret defines HOME_DOMAIN.
+  */ -}}
+{{- $usersYaml := (include ".chezmoisecrets/users.yaml.age") | decrypt | fromYaml -}}
+{{- $me := index $usersYaml.users .chezmoi.username -}}
+{{- $secretEnv := default dict (index $me "env") -}}
+{{- if index $secretEnv "HOME_DOMAIN" }},
+  "mcp": {
+    "servers": {
+      "home-assistant": {
+        "type": "remote",
+        "url": "{env:HOME_ASSISTANT_MCP_URL}"
+      }
+    }
+  }
+{{- end }}
+}
