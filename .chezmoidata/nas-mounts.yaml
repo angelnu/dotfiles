@@ -1,0 +1,39 @@
+# NFS mounts from the family NAS (Synology, exports under /volume1/...),
+# auto-mounted on access. One file for everyone, same shape as
+# .chezmoidata/env.yaml: "common" applies to every user on every machine,
+# "users.<name>" is that user's own overlay merged on top.
+#
+# The SERVER is deliberately NOT here: it is composed at render time from
+# the encrypted HOME_DOMAIN secret (users.<name>.env in
+# .chezmoisecrets/users.yaml.age) as "nas.home.<domain>", so neither this
+# public plaintext file nor the machine ever needs the domain written down.
+# Consumers: .chezmoitemplates/resolved-nas-mounts and
+# .chezmoiscripts/run_onchange_after_25-nas-nfs-mounts.sh.tmpl.
+#
+# Per-entry keys:
+#   export  - the NAS export path (what follows "<server>:" in the mount spec)
+#   path    - mount point, relative to the user's home ($HOME/<path>)
+#   options - optional, defaults to default_options below (identical to what
+#             this machine's hand-written fstab entries used)
+nas_mounts:
+  default_options: rw,soft,timeo=100,retrans=3,noauto,x-systemd.automount,x-systemd.idle-timeout=600,_netdev
+  common:
+    - export: /volume1/downloads
+      path: nas/downloads
+    - export: /volume1/software
+      path: nas/software
+    - export: /volume1/video
+      path: nas/video
+    - export: /volume1/music
+      path: nas/music
+    - export: /volume1/software/emuladores/emudeck/Emulation/roms
+      path: Emulation/roms
+    - export: /volume1/software/emuladores/emudeck/Emulation/bios
+      path: Emulation/bios
+    - export: /volume1/software/emuladores/emudeck/Emulation/tools/downloaded_media
+      path: Emulation/tools/downloaded_media
+  # Per-user overlay: both users get the same set today; a user-specific mount
+  # would be added here and is merged on top of common (see resolved-nas-mounts).
+  users:
+    angel: []
+    mireille: []

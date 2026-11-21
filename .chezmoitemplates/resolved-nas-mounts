@@ -1,0 +1,26 @@
+{{- /*
+  NFS mounts for the current user, from the single .chezmoidata/nas-mounts.yaml
+  ("common" + "users.<name>", concatenated - see that file). Output: a JSON
+  array of {"export","path","options"} with options defaulted from
+  default_options. Consumers (the run_onchange NFS-mounts script) call ONLY
+  this and never re-derive the merge - same idiom as resolved-env /
+  resolved-packages.
+
+  The server host is NOT part of the output: the consuming script composes
+  "nas.home.<domain>" from the encrypted HOME_DOMAIN secret, so the domain
+  never reaches this public repo.
+
+  `index`, not dot-notation, for the same reason as resolved-env: a missing
+  users.<name> entry must yield nil, not an error.
+*/ -}}
+{{- $data := default dict (index . "nas_mounts") -}}
+{{- $defaultOptions := index $data "default_options" -}}
+{{- $common := default list (index $data "common") -}}
+{{- $allUsers := default dict (index $data "users") -}}
+{{- $user := default list (index $allUsers .chezmoi.username) -}}
+{{- $out := list -}}
+{{- range concat $common $user -}}
+  {{- $o := default $defaultOptions (index . "options") -}}
+  {{- $out = append $out (dict "export" (index . "export") "path" (index . "path") "options" $o) -}}
+{{- end -}}
+{{- $out | toJson -}}

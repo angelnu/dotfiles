@@ -1,0 +1,114 @@
+{{ if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+# Manages the family NAS NFS mounts as ONE marked, idempotent block in
+# /etc/fstab (auto-mounted on access via x-systemd.automount; systemd
+# generates the .automount/.mount units from fstab, so nothing else to
+# maintain). The mount list comes from .chezmoidata/nas-mounts.yaml via
+# .chezmoitemplates/resolved-nas-mounts; the SERVER host is composed here
+# from the encrypted HOME_DOMAIN secret - neither the repo nor this machine
+# keeps the domain written down by hand.
+#
+# Self-migrating: it drops the previous managed block AND any unmarked fstab
+# line mounting a managed mount point (that is how this machine's
+# hand-written NAS entries get folded into the managed block), then writes
+# the block back. Mount points are created first (user-owned while unmounted).
+#
+# run_onchange: runs only when the rendered mount list changes, so the sudo
+# prompt appears only on a real config change; an unattended run (the daily
+# chezmoi-update timer, no TTY, no passwordless sudo) skips with a message
+# instead of failing. Linux-only: renders empty on other OSes.
+{{- $usersYaml := (include ".chezmoisecrets/users.yaml.age") | decrypt | fromYaml -}}
+{{- $me := index $usersYaml.users .chezmoi.username -}}
+{{- $domain := index (default dict (index $me "env")) "HOME_DOMAIN" -}}
+{{- $mounts := (includeTemplate "resolved-nas-mounts" .) | fromJson }}
+# mounts hash: {{ $mounts | toJson | sha256sum }}
+set -euo pipefail
+
+{{ if not $domain -}}
+echo "==> nas mounts: no HOME_DOMAIN in this user's secret - nothing to mount" >&2
+exit 0
+{{- else }}
+{{- $server := printf "nas.home.%s" $domain }}
+FSTAB=/etc/fstab
+BEGIN="# BEGIN chezmoi-nas-mounts (managed by chezmoi - do not edit)"
+END="# END chezmoi-nas-mounts"
+
+if ! command -v mount.nfs >/dev/null 2>&1; then
+    echo "==> nas mounts: NFS client (nfs-utils) not present - skipping" >&2
+    exit 0
+fi
+
+# sudo only where it can work: prompt when interactive, accept an existing
+# passwordless ticket when unattended, otherwise skip instead of failing.
+sudo_run() {
+    if [ -t 0 ] || [ -t 1 ]; then
+        sudo "$@"
+    elif sudo -n true 2>/dev/null; then
+        sudo -n "$@"
+    else
+        echo "==> nas mounts: sudo unavailable in this run - apply interactively: chezmoi apply" >&2
+        return 1
+    fi
+}
+
+# 1) mount points (parents included), user-owned while unmounted
+{{- range $mounts }}
+mkdir -p {{ (printf "%s/%s" $.chezmoi.homeDir .path) | quote }}
+{{- end }}
+
+DESIRED="$(mktemp)"
+WANTED="$(mktemp)"
+OLD="$(mktemp)"
+NEW="$(mktemp)"
+trap 'rm -f "$DESIRED" "$WANTED" "$OLD" "$NEW"' EXIT
+
+# 2) the desired block, and the mount-point list it manages
+cat > "$DESIRED" <<CHEZMOI_FSTAB_BLOCK
+${BEGIN}
+{{- range $mounts }}
+{{ printf "%s:%s\t%s/%s\tnfs\t%s\t0 0" $server .export $.chezmoi.homeDir .path .options }}
+{{- end }}
+${END}
+CHEZMOI_FSTAB_BLOCK
+{{- range $mounts }}
+printf '%s\n' {{ (printf "%s/%s" $.chezmoi.homeDir .path) | quote }} >> "$WANTED"
+{{- end }}
+
+# 3) mount points the previous managed block held (for stale-unit cleanup)
+awk -v begin="$BEGIN" -v end="$END" '
+    $0 == begin { inblock = 1; next }
+    inblock { if ($0 == end) inblock = 0; else print $2 }
+' "$FSTAB" > "$OLD" 2>/dev/null || true
+
+# 4) splice: drop the previous managed block, drop any unmarked line mounting
+#    a managed mount point, then append the block
+awk -v begin="$BEGIN" -v end="$END" -v wanted="$WANTED" '
+    BEGIN { while ((getline line < wanted) > 0) keep[line] = 1; inblock = 0 }
+    $0 == begin { inblock = 1; next }
+    inblock { if ($0 == end) inblock = 0; next }
+    /^[[:space:]]*#/ || NF == 0 { print; next }
+    ($2 in keep) { next }
+    { print }
+' "$FSTAB" > "$NEW"
+cat "$DESIRED" >> "$NEW"
+
+if cmp -s "$NEW" "$FSTAB"; then
+    echo "==> nas mounts: $FSTAB already up to date"
+    exit 0
+fi
+
+echo "==> nas mounts: updating $FSTAB"
+sudo_run install -m 0644 -o root -g root "$NEW" "$FSTAB" || exit 0
+sudo_run systemctl daemon-reload || true
+
+# 5) stop the automount/mount units of mount points no longer managed
+while IFS= read -r mp; do
+    [ -n "$mp" ] || continue
+    grep -qxF "$mp" "$WANTED" && continue
+    real="$(realpath -m "$mp")"
+    echo "==> nas mounts: stopping stale units for $mp"
+    sudo_run systemctl stop "$(systemd-escape -p --suffix=automount "$real")" || true
+    sudo_run systemctl stop "$(systemd-escape -p --suffix=mount "$real")" || true
+done < "$OLD"
+{{- end }}
+{{- end }}
